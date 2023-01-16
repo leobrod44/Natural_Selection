@@ -11,6 +11,4 @@ Creature generation
 
  medium nature density     |          low nature density  |     high nature density                  
 :-------------------------:|:----------------------------:|:-------------------------:
-![Capture](https://user-images.githubusercontent.com/65002959/212765592-271b6f71-ed96-4a74-8e43-2dab3cc0e4f5.PNG)
- | ![Screenshot 2023-01-16 154742](https://user-images.githubusercontent.com/65002959/212765602-ef46d13a-01dc-477f-92ae-920f123e5835.png)
-|![Screenshot 2023-01-16 155040](https://user-images.githubusercontent.com/65002959/212765606-4bde5723-cbfa-4f33-adf2-59cce2cc1f70.png)
+![Capture](https://user-images.githubusercontent.com/65002959/212765592-271b6f71-ed96-4a74-8e43-2dab3cc0e4f5.PNG) | ![Screenshot 2023-01-16 154742](https://user-images.githubusercontent.com/65002959/212765602-ef46d13a-01dc-477f-92ae-920f123e5835.png) |![Screenshot 2023-01-16 155040](https://user-images.githubusercontent.com/65002959/212765606-4bde5723-cbfa-4f33-adf2-59cce2cc1f70.png)
