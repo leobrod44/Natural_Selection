@@ -1,7 +1,7 @@
 # Natural Selection Simulator
 
-Biome generation
-#Natural habitat generation
+Biome generation\n
+Natural habitat generation\n
 
  medium nature density     |          low nature density  |     high nature density                  
 :-------------------------:|:----------------------------:|:-------------------------:
