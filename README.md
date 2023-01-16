@@ -9,7 +9,7 @@ Biome generation
 
 
 <figure markdown>
-  ![Elements](../../images/elements-logo.png){: style="height:83px"}
-  ![Dandi](../../images/dandi-logo.png){: style="height:83px"}
+  ![Screenshot 2023-01-16 154057](https://user-images.githubusercontent.com/65002959/212764644-402da6e2-a8bd-4b05-8286-8141488d8536.png){: style="height:83px"}
+  ![Screenshot 2023-01-16 154057](https://user-images.githubusercontent.com/65002959/212764644-402da6e2-a8bd-4b05-8286-8141488d8536.png){: style="height:83px"}
   <figcaption>Partners</figcaption>
 </figure>
