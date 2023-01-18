@@ -5,6 +5,7 @@ Natural habitat generation\n
 
 -	Procedurally generated biomes and characters controlled by neural networks for sensor/action decision making.
 -	Genetic algorithm for gene reproduction and optimization 
+- This project takes an alternative path to optimization. GA's do not use traditional backpropagation to ajust network weights but rather "breed" them to obtain the mean value between 2 seperate good solutions. 
 
 
  medium nature density     |          low nature density  |     high nature density                  
