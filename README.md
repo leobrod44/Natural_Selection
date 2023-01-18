@@ -1,4 +1,4 @@
-# Natural Selection Simulator
+# Natural Selection Simulator with Genetic Algorithms
 
 Biome generation\n
 Natural habitat generation\n
