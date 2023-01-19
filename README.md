@@ -5,8 +5,6 @@
 ### Natural habitat generation
 
 -	Procedurally generated biomes and characters controlled by neural networks for sensor/action decision making.
--	Genetic algorithm for gene reproduction and optimization 
-- This project takes an alternative path to optimization. GA's do not use traditional backpropagation to ajust network weights but rather "breed" them to obtain the mean value between 2 seperate good solutions. 
 
 
  medium nature density     |          low nature density  |     high nature density                  
@@ -23,6 +21,7 @@
 
 
 ## Genetic Algorithm Design
+- Genetic algorithm for gene reproduction and optimization. This project takes an alternative path to optimization. GA's do not use traditional backpropagation to ajust network weights but rather "breed" them to obtain the mean value between 2 seperate good solutions. 
 
 ![GA](https://user-images.githubusercontent.com/65002959/213335497-5d64a079-3540-4692-8a88-ba18220bb3bb.png)
 ![GA1](https://user-images.githubusercontent.com/65002959/213335502-b2e4254e-0f0b-43d6-a0ae-43d763b4bfa6.png)
@@ -30,6 +29,6 @@
 # Neural Network
 
  - ## Functionality
-      -Characters will always be in movement unless they are eating, drinking or breeding. Depending on their Network, creatures will be responding to situations solely  by changing directions
+      - Characters will always be in movement unless they are eating, drinking or breeding. Depending on their Network, creatures will be responding to situations solely  by changing directions
  - ## Current Sensor and Actor Neurons
 ![Neurons](https://user-images.githubusercontent.com/65002959/213335512-dfb6ca9f-9f5f-475a-b31f-0c51b91d9945.png)
