@@ -66,7 +66,7 @@ public class Layout : MonoBehaviour
         var y = Random.Range(0, MAPSIZE);
 
         GameObject skeleton = Instantiate(skeletons[0]);
-        skeleton.transform.position = new Vector3(x, 1f, y);
+        skeleton.transform.position = new Vector3(x, 0.5f, y);
         //Determine body characteristics 
         var bodySize = Random.Range(0.2f, 1);
         var eyeSize = Random.Range(0.1f, 0.5f);

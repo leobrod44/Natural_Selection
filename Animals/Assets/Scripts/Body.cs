@@ -6,8 +6,6 @@ using System;
 
 public class Body
 {
-    public string name;
-
     public Color primaryColor;
 
     public Color secondaryColor;
@@ -26,8 +24,8 @@ public class Body
     public Body(GameObject skeleton, float bodySize, float eyeSize, float legSize, int x, int y)
     {
         this.skeleton = skeleton;
-        name = GenerateCoolName();
-        skeleton.name = name;
+        skeleton.name = GenerateCoolName();
+        DisplayName(skeleton);
         primaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
         secondaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
         SetBodySize(bodySize);
@@ -65,7 +63,7 @@ public class Body
         {
             if (child.name.Contains("leg"))
             {
-                child.transform.localScale += new Vector3(width, width / 2, width);
+                child.transform.localScale += new Vector3(width/3, width / 2, width/3);
                 SetColor(child.gameObject, secondaryColor);
             }
         }
@@ -95,7 +93,6 @@ public class Body
         c++;
         firstName += ends[r.Next(ends.Length)];
         c++;
-
         string secondName = "";
         secondName += consonants[r.Next(consonants.Length)].ToUpper();
         secondName += vowels[r.Next(vowels.Length)];
@@ -113,6 +110,22 @@ public class Body
         c++;
 
         return firstName + " " + secondName;
+    }
+
+    private void DisplayName(GameObject parent)
+    {
+        GameObject nameDisplay = new GameObject("Name tag");
+        nameDisplay.transform.rotation = Camera.main.transform.rotation;
+        TextMesh tm = nameDisplay.AddComponent<TextMesh>();
+        tm.text = parent.name;
+        nameDisplay.transform.parent = parent.transform;
+        nameDisplay.transform.position = new Vector3(parent.transform.position.x, parent.transform.position.y+1, parent.transform.position.z);
+        tm.color = Color.magenta;
+        tm.fontStyle = FontStyle.Bold;
+        tm.alignment = TextAlignment.Center;
+        tm.anchor = TextAnchor.MiddleCenter;
+        tm.characterSize = 0.065f;
+        tm.fontSize = 80;
     }
 
 }

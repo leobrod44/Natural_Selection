@@ -2,9 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class ActionNeuron
+public abstract class ActionNeuron: Neuron
 {
-    public GameObject parent;
     public ActionNeuron(GameObject parent)
     {
         this.parent = parent;
@@ -14,10 +13,11 @@ public abstract class ActionNeuron
 
 public class RotateSlightRightAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 7;
     public RotateSlightRightAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()
@@ -28,10 +28,11 @@ public class RotateSlightRightAction : ActionNeuron
 
 public class RotateSlightLeftAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 8;
     public RotateSlightLeftAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()
@@ -43,10 +44,11 @@ public class RotateSlightLeftAction : ActionNeuron
 
 public class RotateQuarterRightAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 9;
     public RotateQuarterRightAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()
@@ -56,10 +58,11 @@ public class RotateQuarterRightAction : ActionNeuron
 }
 public class RotateQuarterLeftAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 10;
     public RotateQuarterLeftAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()
@@ -70,10 +73,11 @@ public class RotateQuarterLeftAction : ActionNeuron
 
 public class TurnAroundAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 11;
     public TurnAroundAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()
@@ -85,10 +89,11 @@ public class TurnAroundAction : ActionNeuron
 
 public class RotateRandomAction : ActionNeuron
 {
-    public Animal brain;
+    private const int id = 12;
     public RotateRandomAction(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
 
     public override void DoAction()

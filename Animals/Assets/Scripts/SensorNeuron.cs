@@ -2,9 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class SensorNeuron
+public abstract class SensorNeuron: Neuron
 {
-    public GameObject parent;
     public SensorNeuron(GameObject parent)
     {
         this.parent = parent;
@@ -32,42 +31,45 @@ public abstract class SensorNeuron
 
 public class WaterLevelSensor: SensorNeuron
 {
-    public Animal brain;
+    private const int id = 1;
     public WaterLevelSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
-        return brain.currentWater/100f;
+        return animal.currentWater/100f;
     }
 }
 
 public class FoodLevelSensor : SensorNeuron
 {
-    public Animal brain;
+    private const int id = 2;
     public FoodLevelSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
-        return brain.currentFood / 100f;
+        return animal.currentFood / 100f;
     }
 }
 
 public class WaterDistanceForwardSensor : SensorNeuron
 {
-    public Animal brain;
     const int WATERLAYER = 4;
+    private const int id = 3;
     public WaterDistanceForwardSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
         
-        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), brain.eyeSight, 1 << WATERLAYER);
+        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
         float closest = 0;
         if (inRadiusWater.Length > 0)
         {
@@ -82,16 +84,17 @@ public class WaterDistanceForwardSensor : SensorNeuron
 
 public class WaterDistanceSidesSensor : SensorNeuron
 {
-    public Animal brain;
     const int WATERLAYER = 4;
+    private const int id = 4;
     public WaterDistanceSidesSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
 
-        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), brain.eyeSight, 1 << WATERLAYER);
+        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
         float closest = 0;
         if (inRadiusWater.Length > 0)
         {
@@ -104,16 +107,17 @@ public class WaterDistanceSidesSensor : SensorNeuron
 }
 public class FoodDistanceForwardSensor : SensorNeuron
 {
-    public Animal brain;
     const int FOODLAYER = 7;
+    private const int id = 5;
     public FoodDistanceForwardSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
 
-        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), brain.eyeSight, 1 << FOODLAYER);
+        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
         float closest = 0;
         if (inRadiusFood.Length > 0)
         {
@@ -127,16 +131,17 @@ public class FoodDistanceForwardSensor : SensorNeuron
 
 public class FoodDistanceSidesSensor : SensorNeuron
 {
-    public Animal brain;
     const int FOODLAYER = 7;
+    private const int id = 6;
     public FoodDistanceSidesSensor(GameObject parent) : base(parent)
     {
-        brain = parent.GetComponent<Animal>();
+        animal = parent.GetComponent<Animal>();
+        Id = id;
     }
     public override float GetSensorValue()
     {
 
-        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), brain.eyeSight, 1 << FOODLAYER);
+        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
         float closest = 0;
         if (inRadiusFood.Length > 0)
         {

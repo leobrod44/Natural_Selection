@@ -54,15 +54,17 @@ public class Animal: MonoBehaviour
 
     public List<ActionNeuron> actions;
 
+    public Brain brain;
+
     private Diet diet;
 
     void Awake()
     {
+        brain = new Brain(gameObject);
         eating = false;
         drinking = false;
         layout = GameObject.Find("Engine").GetComponent<Layout>();
         act = DefaultMovement;
-
         canMove = true;
         currentArea = layout.sections[(int)transform.position.x, (int)transform.position.z];
         currentPosition = new Tuple<int, int>((int)transform.position.x, (int)transform.position.z);
@@ -76,13 +78,23 @@ public class Animal: MonoBehaviour
         interests.Add(Interests.WaterF);
         interests.Add(Interests.WaterS);
         sensors = new List<SensorNeuron>();
+
         sensors.Add(new WaterLevelSensor(gameObject));
         sensors.Add(new WaterDistanceForwardSensor(gameObject));
+        sensors.Add(new WaterDistanceSidesSensor(gameObject));
         sensors.Add(new FoodLevelSensor(gameObject));
         sensors.Add(new FoodDistanceForwardSensor(gameObject));
+        sensors.Add(new FoodDistanceSidesSensor(gameObject));
 
         actions = new List<ActionNeuron>();
+
         actions.Add(new TurnAroundAction(gameObject));
+        actions.Add(new RotateQuarterLeftAction(gameObject));
+        actions.Add(new RotateQuarterRightAction(gameObject));
+        actions.Add(new RotateSlightLeftAction(gameObject));
+        actions.Add(new RotateSlightRightAction(gameObject));
+        actions.Add(new RotateRandomAction(gameObject));
+        Debug.Log(brain.Neurons);
     }
     void Update()
     {
@@ -93,6 +105,13 @@ public class Animal: MonoBehaviour
             CheckTile();
             Scan();
             act();
+            if(transform.position.x>Layout.MAPSIZE 
+                || transform.position.x<0 
+                || transform.position.y > Layout.MAPSIZE 
+                || transform.position.y < 0)
+            {
+                act = (new TurnAroundAction(gameObject)).DoAction;
+            }
             
         }
         Tick();
@@ -106,6 +125,7 @@ public class Animal: MonoBehaviour
             Destroy(gameObject);
         }
     }
+
 
     private void Scan()
     {
