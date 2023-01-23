@@ -1,7 +1,7 @@
 # Natural Selection Simulator with Genetic Algorithms
 
 ## Summary
-Procedurally generated biomes and characters controlled by neural networks for real-time sensor/action decision making. Optimized using Genetic Algorithms for gene reproduction.
+Procedurally generated biomes and creatures controlled by neural networks for real-time sensor/action decision making. Use of Genetic Algorithms for creatures to learn to adapt to their environment by gene reproduction.
 ## Biome generation
 
 ### Natural habitat generation
