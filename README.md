@@ -33,5 +33,5 @@ Procedurally generated biomes and characters controlled by neural networks for r
  - ## Functionality
       - Characters will always be in movement unless they are eating, drinking or breeding. Depending on their Network, creatures will be responding to situations solely  by changing directions
  - ## Current Sensor and Actor Neurons
-      - Neurons implemented in [ActionNeuron.cs]([ActionNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/ActionNeuron.cs) and [SensorNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/SensorNeuron.cs). All implementing methods to be assigned to a delegate according to the neural net during runtime.
+      - Neurons implemented in [ActionNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/ActionNeuron.cs) and [SensorNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/SensorNeuron.cs). All implementing methods to be assigned to a delegate according to the neural net during runtime.
 ![Neurons](https://user-images.githubusercontent.com/65002959/213335512-dfb6ca9f-9f5f-475a-b31f-0c51b91d9945.png)
