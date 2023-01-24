@@ -32,6 +32,8 @@ Procedurally generated biomes and creatures controlled by neural networks for re
 
  - ## Functionality
       - Characters will always be in movement unless they are eating, drinking or breeding. Depending on their Network, creatures will be responding to situations solely  by changing directions
+ - ## Activation function
+      - Hyberbolic tangent activation function
  - ## Current Sensor and Actor Neurons
       - Neurons implemented in [ActionNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/ActionNeuron.cs) and [SensorNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/SensorNeuron.cs). All implementing methods to be assigned to a delegate according to the neural net during runtime.
 ![image0](https://user-images.githubusercontent.com/65002959/214120041-79461f3e-46cf-4db1-b236-3de10bbfb513.jpeg)
