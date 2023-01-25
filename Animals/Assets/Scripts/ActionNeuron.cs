@@ -1,14 +1,36 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class ActionNeuron: Neuron
+
+public abstract class ActionNeuron: Neuron, Destination
 {
+    private List<Tuple<int, float>> m_weights;
+
+    private float result;
     public ActionNeuron(GameObject parent)
     {
         this.parent = parent;
+        m_weights = new List<Tuple<int, float>>();
     }
     public abstract void DoAction();
+    public List<Tuple<int, float>> GetWeights()
+    {
+        return m_weights;
+    }
+    public void AddWeight(int sourceId, float val)
+    {
+        m_weights.Add(new Tuple<int, float>(sourceId, val));
+    }
+    public float GetActivatedValue()
+    {
+        return result;
+    }
+    public void SetActivatedValue(float val)
+    {
+        result = val;
+    }
 }
 
 public class RotateSlightRightAction : ActionNeuron
@@ -98,7 +120,7 @@ public class RotateRandomAction : ActionNeuron
 
     public override void DoAction()
     {
-        var rand = Random.Range(0, 360);
+        var rand = UnityEngine.Random.Range(0, 360);
         parent.transform.Rotate(0, rand, 0);
     }
 }

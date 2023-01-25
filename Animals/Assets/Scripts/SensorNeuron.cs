@@ -2,15 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class SensorNeuron: Neuron
+
+public abstract class SensorNeuron : Neuron, Origin
 {
+    private float m_sensorValue;
+
     public SensorNeuron(GameObject parent)
     {
         this.parent = parent;
     }
-    public abstract float GetSensorValue();
+    public abstract void SetSensorValue();
 
-    internal Vector3 GetDistanceClosest(Collider[] collisions)
+    protected Vector3 GetDistanceClosest(Collider[] collisions)
     {
         float closest = 0;
         GameObject closestTile = collisions[0].gameObject;
@@ -27,9 +30,17 @@ public abstract class SensorNeuron: Neuron
         var distanceVector = closestTile.transform.position - parent.transform.position;
         return distanceVector;
     }
+    public float GetOriginValue()
+    {
+        return m_sensorValue;
+    }
+    public void SetOriginValue(float val)
+    {
+        m_sensorValue = val;
+    }
 }
 
-public class WaterLevelSensor: SensorNeuron
+public class WaterLevelSensor : SensorNeuron
 {
     private const int id = 1;
     public WaterLevelSensor(GameObject parent) : base(parent)
@@ -37,9 +48,9 @@ public class WaterLevelSensor: SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
-        return animal.currentWater/100f;
+        SetOriginValue(animal.currentWater / 100f);
     }
 }
 
@@ -51,9 +62,9 @@ public class FoodLevelSensor : SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
-        return animal.currentFood / 100f;
+        SetOriginValue(animal.currentFood / 100f);
     }
 }
 
@@ -66,19 +77,19 @@ public class WaterDistanceForwardSensor : SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
-        
+
         Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
         float closest = 0;
         if (inRadiusWater.Length > 0)
         {
             var distanceVector = GetDistanceClosest(inRadiusWater);
-            var angle = Mathf.Deg2Rad*Vector3.Angle(distanceVector, parent.transform.forward);
+            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
             closest = Mathf.Cos(angle) * distanceVector.magnitude;
         }
 
-        return closest;
+        SetOriginValue(closest);
     }
 }
 
@@ -91,7 +102,7 @@ public class WaterDistanceSidesSensor : SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
 
         Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
@@ -102,7 +113,7 @@ public class WaterDistanceSidesSensor : SensorNeuron
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
             closest = Mathf.Sin(angle) * distanceVector.magnitude;
         }
-        return closest;
+        SetOriginValue(closest);
     }
 }
 public class FoodDistanceForwardSensor : SensorNeuron
@@ -114,7 +125,7 @@ public class FoodDistanceForwardSensor : SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
 
         Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
@@ -125,7 +136,7 @@ public class FoodDistanceForwardSensor : SensorNeuron
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
             closest = Mathf.Cos(angle) * distanceVector.magnitude;
         }
-        return closest;
+        SetOriginValue(closest);
     }
 }
 
@@ -138,7 +149,7 @@ public class FoodDistanceSidesSensor : SensorNeuron
         animal = parent.GetComponent<Animal>();
         Id = id;
     }
-    public override float GetSensorValue()
+    public override void SetSensorValue()
     {
 
         Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
@@ -149,6 +160,6 @@ public class FoodDistanceSidesSensor : SensorNeuron
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
             closest = Mathf.Sin(angle) * distanceVector.magnitude;
         }
-        return closest;
+        SetOriginValue(closest);
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+[System.Serializable]
 public class Area
 {
     
@@ -47,7 +48,7 @@ public class Area
 public class GrassArea : Area
 {
     private static int grassTileCount = 0;
-    Material mat = GameObject.Find("Engine").GetComponent<Layout>().materials.FirstOrDefault(x => x.name == "Grass");
+    Material mat = GameObject.Find("Engine").GetComponent<Engine>().materials.FirstOrDefault(x => x.name == "Grass");
     public GrassArea(int i, int j) : base(i, j)
     {
         Tile.name = "Grass "+grassTileCount;
@@ -62,7 +63,7 @@ public class GrassArea : Area
 public class WaterArea : Area
 {
     private static int waterTileCount = 0;
-    Material mat = GameObject.Find("Engine").GetComponent<Layout>().materials.FirstOrDefault(x => x.name == "Water");
+    Material mat = GameObject.Find("Engine").GetComponent<Engine>().materials.FirstOrDefault(x => x.name == "Water");
     public WaterArea(int i, int j) : base(i, j)
     {
         Tile.name = "Water "+ waterTileCount;

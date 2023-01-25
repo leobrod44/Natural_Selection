@@ -3,10 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class Animal: MonoBehaviour
 {
     delegate void Act();
-    private Act act;
+    private Act PerformAction;
     delegate void Sens();
     private Act sens;
 
@@ -35,12 +36,19 @@ public class Animal: MonoBehaviour
     private bool canMove;
     private bool eating;
     private bool drinking;
-
-    private Layout layout;
+    private bool outOfBounds;
+    private Engine engine;
 
     private List<Interests> interests;
 
-    public Area currentArea;
+    [SerializeField]
+    private Area currentArea;
+    [SerializeField]
+    private Area area;
+    private float areaX;
+    [SerializeField]
+    private float areaY;
+    [SerializeField]
     public Tuple<int, int> currentPosition;
     private int memoryCapacity; //List<GameObject>
 
@@ -58,15 +66,20 @@ public class Animal: MonoBehaviour
 
     private Diet diet;
 
+    private float decisionTimer;
+
+    public float decisionRate = 1;
+
+
     void Awake()
     {
         brain = new Brain(gameObject);
         eating = false;
         drinking = false;
-        layout = GameObject.Find("Engine").GetComponent<Layout>();
-        act = DefaultMovement;
+        engine = GameObject.Find("Engine").GetComponent<Engine>();
+        PerformAction = DefaultMovement;
         canMove = true;
-        currentArea = layout.sections[(int)transform.position.x, (int)transform.position.z];
+        currentArea = engine.sections[(int)transform.position.x, (int)transform.position.z];
         currentPosition = new Tuple<int, int>((int)transform.position.x, (int)transform.position.z);
         
         currentFood = maxFood;
@@ -74,46 +87,45 @@ public class Animal: MonoBehaviour
 
         speed = 2;
         eyeSight = 4;
-        interests = new List<Interests>();
-        interests.Add(Interests.WaterF);
-        interests.Add(Interests.WaterS);
-        sensors = new List<SensorNeuron>();
+        //interests = new List<Interests>();
+        //interests.Add(Interests.WaterF);
+        //interests.Add(Interests.WaterS);
+        //sensors = new List<SensorNeuron>();
 
-        sensors.Add(new WaterLevelSensor(gameObject));
-        sensors.Add(new WaterDistanceForwardSensor(gameObject));
-        sensors.Add(new WaterDistanceSidesSensor(gameObject));
-        sensors.Add(new FoodLevelSensor(gameObject));
-        sensors.Add(new FoodDistanceForwardSensor(gameObject));
-        sensors.Add(new FoodDistanceSidesSensor(gameObject));
+        //sensors.Add(new WaterLevelSensor(gameObject));
+        //sensors.Add(new WaterDistanceForwardSensor(gameObject));
+        //sensors.Add(new WaterDistanceSidesSensor(gameObject));
+        //sensors.Add(new FoodLevelSensor(gameObject));
+        //sensors.Add(new FoodDistanceForwardSensor(gameObject));
+        //sensors.Add(new FoodDistanceSidesSensor(gameObject));
 
-        actions = new List<ActionNeuron>();
+        //actions = new List<ActionNeuron>();
 
-        actions.Add(new TurnAroundAction(gameObject));
-        actions.Add(new RotateQuarterLeftAction(gameObject));
-        actions.Add(new RotateQuarterRightAction(gameObject));
-        actions.Add(new RotateSlightLeftAction(gameObject));
-        actions.Add(new RotateSlightRightAction(gameObject));
-        actions.Add(new RotateRandomAction(gameObject));
+        //actions.Add(new TurnAroundAction(gameObject));
+        //actions.Add(new RotateQuarterLeftAction(gameObject));
+        //actions.Add(new RotateQuarterRightAction(gameObject));
+        //actions.Add(new RotateSlightLeftAction(gameObject));
+        //actions.Add(new RotateSlightRightAction(gameObject));
+        //actions.Add(new RotateRandomAction(gameObject));
         Debug.Log(brain.Neurons);
     }
     void Update()
     {
         //verify sensors, 
+        CheckDeath();
+        CheckTile();
+        Scan();
         if (canMove)
         {
-            CheckDeath();
-            CheckTile();
-            Scan();
-            act();
-            if(transform.position.x>Layout.MAPSIZE 
-                || transform.position.x<0 
-                || transform.position.y > Layout.MAPSIZE 
-                || transform.position.y < 0)
+            transform.position += transform.forward * speed * Time.deltaTime;
+            if (Time.time > decisionTimer + engine.animalDecisionRate && !outOfBounds)
             {
-                act = (new TurnAroundAction(gameObject)).DoAction;
+                ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
+                neuronToFire.DoAction();
+                decisionTimer = Time.time;
             }
-            
         }
+        
         Tick();
             
     }
@@ -142,10 +154,9 @@ public class Animal: MonoBehaviour
     {
         //TODO need to generate bounds  for map
         //Use Physics.OverlapSphere (someposition, someradius);
-        Area area = null;
         try
         {
-            area = layout.sections[currentPosx, currentPosy];
+            area = engine.sections[currentPosx, currentPosy];
         }
         catch
         {
@@ -160,22 +171,53 @@ public class Animal: MonoBehaviour
             currentArea.currentAnimals.Add(gameObject);
         }
 
-        foreach(var neuron in sensors)
-        {
-            neuron.GetSensorValue();
-        }
-
     }
 
     private void CheckTile()
     {
-        if(currentArea.Type == AreaType.Food)
+        int currentPosx = (int)transform.position.x;
+        int currentPosy = (int)transform.position.z;
+        if (currentPosx != currentPosition.Item1 || currentPosy != currentPosition.Item2)
+        {
+            currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
+            try
+            {
+                area = engine.sections[currentPosx, currentPosy];
+            }
+            catch
+            {
+                Debug.Log(currentPosx);
+                Debug.Log(currentPosy);
+            }
+        }
+        //refreshes tiles once moved
+        if (area.Tile != currentArea.Tile)
+        {
+            currentArea.currentAnimals.Remove(gameObject);
+            currentArea = area;
+            currentArea.currentAnimals.Add(gameObject);
+        }
+        if (currentArea.Type == AreaType.Food)
         {
             Eat();
         }
         else if(currentArea.Type == AreaType.Water)
         {
             Drink();
+        }
+        if (transform.position.x > Engine.MAPSIZE
+                    || transform.position.x < 0
+                    || transform.position.y > Engine.MAPSIZE
+                    || transform.position.y < 0)
+        {
+            ActionNeuron tempTurnAroundNeuron = new TurnAroundAction(gameObject);
+            tempTurnAroundNeuron.DoAction();
+            outOfBounds = true;
+        }
+        else
+        {
+            outOfBounds = false;
+                
         }
     }
     private void Eat()
@@ -188,7 +230,6 @@ public class Animal: MonoBehaviour
             currentArea.Type = AreaType.Grass;
             StartCoroutine(Eating(2));
             StartCoroutine(StopInPlace(2));
-            actions[0].DoAction();
         }
         
     }
@@ -196,7 +237,7 @@ public class Animal: MonoBehaviour
     private void Drink()
     {
         currentWater = maxWater;
-        StartCoroutine(StopInPlace(1));
+        StartCoroutine(StopInPlace(engine.drinkTime));
         StartCoroutine(ResetWater(5));
 
     }
