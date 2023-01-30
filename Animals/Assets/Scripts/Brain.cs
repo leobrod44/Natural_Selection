@@ -39,6 +39,7 @@ public class Brain
             {10, new RotateQuarterLeftAction(parent)},
             {11, new TurnAroundAction(parent)},
             {12, new RotateRandomAction(parent)},
+            {13, new DoNothingAction(parent)},
         };
 
         Neurons = new Dictionary<int, Neuron>();
@@ -92,6 +93,8 @@ public class Brain
             int randNeuron = UnityEngine.Random.Range(0, unionedActorInner.Count);
             var destination = unionedActorInner.ElementAt(randNeuron);
             var weight = UnityEngine.Random.Range(-4f, 4f);
+            //weird edge case where weight is 0 although float
+            weight = weight == 0f ? 0.01f: weight;
             string connection = CreateConnection(id, destination, weight);
             SensorConnections.Add(connection);
         }
@@ -101,6 +104,8 @@ public class Brain
             int randNeuron = UnityEngine.Random.Range(0, unionedActorInner.Count);
             var destination = unionedActorInner.ElementAt(randNeuron);
             var weight = UnityEngine.Random.Range(-4f, 4f);
+            //weird edge case where weight is 0 although float
+            weight = weight == 0f ? 0.01f : weight;
             string connection = CreateConnection(id, destination, weight);
             InnerConnections.Add(connection);
         }
@@ -122,17 +127,25 @@ public class Brain
         {
             ((InnerNeuron)Neurons[destinationId]).AddWeight(sourceId, weight);
         }
-        string sourceBin = IdToBinary(sourceId);
-        string destBin = IdToBinary(destinationId);
+        string sourceBin = GeneEncoding.IdToBinary(sourceId);
+        string destBin = GeneEncoding.IdToBinary(destinationId);
         string sourceBit = Neurons[sourceId] is SensorNeuron ? "1" : "0";
         string destBit = Neurons[destinationId] is ActionNeuron ? "1" : "0";
-        string weightBin = WeightToBinary(weight);
+        string weightBin = GeneEncoding.WeightToBinary(weight);
         string connection32Bit = sourceBit + sourceBin + destBit + destBin + weightBin;
-        string connectionHex = Convert.ToInt64(connection32Bit, 2).ToString("X"); ;
+        var c = weightBin.Length;
+        var x = connection32Bit.Length;
+        string connectionHex = GeneEncoding.BinToHex(connection32Bit);
         return connectionHex;
     }
     #endregion
+    #region Change Generation
 
+    //fitness for when breed integrated
+    //selection
+
+    //mutate
+    #endregion
     #region Propagation and Decision Making
     public ActionNeuron GetScenarioActionNeuron()
     {
@@ -232,81 +245,7 @@ public class Brain
     #endregion
 
     #region Helpers
-    private string IdToBinary(int num)
-    {
-        string fmt = "0000000.##";
-        string bin = "";
-        ValidateBinaryFormat(num);
-        if(num>0)
-            bin = Convert.ToInt32(Convert.ToString(num, 2)).ToString(fmt);
-        else
-        {
-            bin = Convert.ToString(num, 2);
-            bin = bin.Substring(bin.Length - 7);
-        }
-        return bin;
-    }
-
-    private int BinaryToId(string bin) 
-    {
-        int value;
-        if (bin[0]=='0')
-            value = Convert.ToInt32(bin,2);
-        else
-        {
-            string newBin = bin.Replace('1', 'a').Replace('0', 'b').Replace('a', '0').Replace('b', '1');
-            value = -Convert.ToInt32(newBin,2) -1;
-        }
-        return value;
-    }
-
-
-    private string WeightToBinary(float num)
-    {
-        int value = (int)(num * largePrime);
-        string fmt = "0000000000000000.##";
-        string bin = "";
-        if (num > 0)
-            bin = Convert.ToInt64(Convert.ToString(value, 2)).ToString(fmt);
-        else
-        {
-            bin = Convert.ToString(value, 2);
-            //bin = bin.Substring(bin.Length - 7);
-        }
-        float val = BinaryToWeight(bin);
-        return bin;
-    }
-
-    private float BinaryToWeight(string bin)
-    {
-        int value;
-        if (bin[0] == '0')
-            value = Convert.ToInt32(bin, 2);
-        else
-        {
-            string newBin = bin.Replace('1', 'a').Replace('0', 'b').Replace('a', '0').Replace('b', '1');
-            value = -Convert.ToInt32(newBin, 2) - 1;
-        }
-        float dividedValue = value!=0? (float)value / (float)largePrime : 0;
-        return dividedValue;
-    }
-    private static void ValidateBinaryFormat(int num)
-    {
-        if (Math.Abs(num)>64)
-            throw new InvalidBinaryFormatException(num);
-    }
-
+    
     #endregion
 
-}
-
-class InvalidBinaryFormatException : Exception
-{
-    public InvalidBinaryFormatException() { }
-
-    public InvalidBinaryFormatException(int num)
-        : base(String.Format("Invalid Binary Format, Exceeding maxium of 256 for 8 bit binary: {0}", num))
-    {
-
-    }
 }

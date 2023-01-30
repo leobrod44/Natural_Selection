@@ -124,3 +124,18 @@ public class RotateRandomAction : ActionNeuron
         parent.transform.Rotate(0, rand, 0);
     }
 }
+
+public class DoNothingAction : ActionNeuron
+{
+    private const int id = 13;
+    public DoNothingAction(GameObject parent) : base(parent)
+    {
+        animal = parent.GetComponent<Animal>();
+        Id = id;
+    }
+
+    public override void DoAction()
+    {
+        
+    }
+}

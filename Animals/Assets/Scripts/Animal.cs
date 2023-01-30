@@ -38,7 +38,7 @@ public class Animal: MonoBehaviour
     private bool drinking;
     private bool outOfBounds;
     private Engine engine;
-
+    public Body body;
     private List<Interests> interests;
 
     [SerializeField]
@@ -84,57 +84,50 @@ public class Animal: MonoBehaviour
         
         currentFood = maxFood;
         currentWater = maxWater;
-
+        outOfBounds = false;
         speed = 2;
-        eyeSight = 4;
+        eyeSight = 10;
         //interests = new List<Interests>();
         //interests.Add(Interests.WaterF);
         //interests.Add(Interests.WaterS);
-        //sensors = new List<SensorNeuron>();
-
-        //sensors.Add(new WaterLevelSensor(gameObject));
-        //sensors.Add(new WaterDistanceForwardSensor(gameObject));
-        //sensors.Add(new WaterDistanceSidesSensor(gameObject));
-        //sensors.Add(new FoodLevelSensor(gameObject));
-        //sensors.Add(new FoodDistanceForwardSensor(gameObject));
-        //sensors.Add(new FoodDistanceSidesSensor(gameObject));
-
-        //actions = new List<ActionNeuron>();
-
-        //actions.Add(new TurnAroundAction(gameObject));
-        //actions.Add(new RotateQuarterLeftAction(gameObject));
-        //actions.Add(new RotateQuarterRightAction(gameObject));
-        //actions.Add(new RotateSlightLeftAction(gameObject));
-        //actions.Add(new RotateSlightRightAction(gameObject));
-        //actions.Add(new RotateRandomAction(gameObject));
         Debug.Log(brain.Neurons);
     }
     void Update()
     {
         //verify sensors, 
-        CheckDeath();
-        CheckTile();
-        Scan();
+        
+        
         if (canMove)
         {
             transform.position += transform.forward * speed * Time.deltaTime;
+            CheckTile();
+            Scan();
             if (Time.time > decisionTimer + engine.animalDecisionRate && !outOfBounds)
             {
-                ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
-                neuronToFire.DoAction();
+                try
+                {
+                    ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
+                    neuronToFire.DoAction();
+                }
+                catch
+                {
+                    Debug.Log("brain does not have any action connections, wait for it to die out");
+                }
+
                 decisionTimer = Time.time;
             }
         }
-        
         Tick();
-            
+        CheckDeath();
+
     }
 
     private void CheckDeath()
     {
         if (currentFood <= 0 || currentWater <= 0)
         {
-            Destroy(gameObject);
+            gameObject.SetActive(false);
+            Generation.currentPopulationSize--;
         }
     }
 
@@ -210,14 +203,17 @@ public class Animal: MonoBehaviour
                     || transform.position.y > Engine.MAPSIZE
                     || transform.position.y < 0)
         {
-            ActionNeuron tempTurnAroundNeuron = new TurnAroundAction(gameObject);
-            tempTurnAroundNeuron.DoAction();
-            outOfBounds = true;
+            if (!outOfBounds)
+            {
+                ActionNeuron tempTurnAroundNeuron = new TurnAroundAction(gameObject);
+                tempTurnAroundNeuron.DoAction();
+                outOfBounds = true;
+            }
         }
         else
         {
-            outOfBounds = false;
-                
+            if (outOfBounds)
+                outOfBounds = false;
         }
     }
     private void Eat()
@@ -239,7 +235,6 @@ public class Animal: MonoBehaviour
         currentWater = maxWater;
         StartCoroutine(StopInPlace(engine.drinkTime));
         StartCoroutine(ResetWater(5));
-
     }
 
     private IEnumerator ResetWater(float seconds)
@@ -272,26 +267,9 @@ public class Animal: MonoBehaviour
 
     private void Tick()
     {
-        currentWater -= Time.deltaTime * (speed + eyeSight);
-        currentFood -= Time.deltaTime * (speed + eyeSight);
+        currentWater -= Time.deltaTime * (speed + eyeSight) * 1f / engine.depletionConstant;
+        currentFood -= Time.deltaTime * (speed + eyeSight) * 1f / engine.depletionConstant;
     }
-
-    //public Brain()   !!! change this one for smthing like Connections, which creates the template to use, Brain will do the actions
-    //{
-
-    //}
-
-    //public Brain(int numSensors, int numActions)
-    //{
-
-    //}
-
-    //public Brain(List<Sensor> sensors, List<Action> actions)
-    //{
-
-    //}
-
-
 
     // input of 0 to 1 -> connection weight -4.0f to 4.0f, neutral neuron tanh(sum(inputs)) -1 to 1, action neuron tanh(sum(inputs)) -1, 1
 

@@ -13,6 +13,7 @@ public class Engine : MonoBehaviour
     [HideInInspector]
     public static int MAPSIZE;
     public int numberOfPuddles;
+    public int puddleSize;
     [HideInInspector]
     public Area[,] sections;
     public Severity density;
@@ -38,51 +39,63 @@ public class Engine : MonoBehaviour
     public int numberOfInnerNeurons;
     public int numberOfInnerLayers;
     public float animalDecisionRate;
-    private List<Body> animals;
+    public float depletionConstant;
+    public Tuple<int, int> eyeSightRange;
 
     [Header("Context parameters")]
     public float eatTime;
     public float drinkTime;
     public float reproduceTime;
 
+    private Generation generation;
 
     #endregion
-    void Start()
+    void Awake()
     {
         Initialize();
+        
+        //Time.timeScale = 3;
+    }
+    void Start()
+    {
+        Camera cam = Camera.main;
+        cam.transform.position = new Vector3(MAPSIZE / 2f, cam.transform.position.y,cam.transform.position.z);
+        generation.GenerateInitialPopulation();
     }
     public void Initialize()
     {
-       
+        generation = GameObject.Find("Engine").GetComponent<Generation>();
         MAPSIZE = mapSize;
         sections = new Area[mapSize, mapSize];
         LoadNatureElements();
         CreateSections(numberOfPuddles);
+        var X = animalCount;
 
-        animals = new List<Body>();
-        for (int i = 0; i < animalCount; i++)
-        {
-            CreateAnimal(AnimalType.Quadruped);
-        }
     }
 
-    public void CreateAnimal(AnimalType type)
-    {
-        var x = Random.Range(0, MAPSIZE-1);
-        var y = Random.Range(0, MAPSIZE-1);
+    //public void CreateAnimal(AnimalType type)
+    //{
+    //    var x = Random.Range(0, MAPSIZE-1);
+    //    var y = Random.Range(0, MAPSIZE-1);
 
-        GameObject skeleton = Instantiate(availableSkeletons[0]);
-        skeleton.transform.position = new Vector3(x, 0.5f, y);
-        //Determine body characteristics 
-        var bodySize = Random.Range(0.2f, 1);
-        var eyeSize = Random.Range(0.1f, 0.5f);
-        var legSize = Random.Range(0.2f, 0.8f);
+    //    GameObject skeleton = Instantiate(availableSkeletons[0]);
+    //    skeleton.transform.position = new Vector3(x, 0.5f, y);
+    //    //Determine body characteristics 
+    //    var bodySize = Random.Range(0.2f, 1);
+    //    var eyeSize = Random.Range(0.1f, 0.5f);
+    //    var legSize = Random.Range(0.2f, 0.8f);
 
-        Body newAnimalBody = new Body(skeleton, bodySize, eyeSize, legSize, x, y);
-        animals.Add(newAnimalBody);
-    }
+    //    //Body newAnimalBody = new Body(skeleton, bodySize, eyeSize, legSize, x, y);
+    //    animals.Add(newAnimalBody);
+    //}
+
+    #region generations
 
 
+
+    #endregion
+
+    #region world creation
     private void CreateSections(int numPuddles)
     {
         GeneratePuddles(numPuddles);
@@ -93,7 +106,7 @@ public class Engine : MonoBehaviour
     {
         for (int puddleCount = 0; puddleCount < numPuddles; puddleCount++)
         {
-            var puddleSeed = UnityEngine.Random.Range(15, mapSize / 3);
+            var puddleSeed = UnityEngine.Random.Range(15, puddleSize);
             var puddleThickness = UnityEngine.Random.Range(puddleSeed / 2, puddleSeed);
             var puddleSourceX = UnityEngine.Random.Range(0, mapSize);
             var puddleSourceY = UnityEngine.Random.Range(0, mapSize);
@@ -261,7 +274,7 @@ public class Engine : MonoBehaviour
         Plants = NatureObjects.Where(x => x.name.Contains("Bush") || x.name.Contains("Mushroom")).ToList();
     }
     #endregion
-
+    #endregion
 }
 public enum Severity
 {

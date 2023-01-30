@@ -21,13 +21,13 @@ public class Body
     public GameObject LeftEye => Eyes.transform.Find("left eye").gameObject;
     #endregion
 
-    public Body(GameObject skeleton, float bodySize, float eyeSize, float legSize, int x, int y)
+    public Body(GameObject skeleton, float bodySize, float eyeSize, float legSize, Color primary, Color secondary)
     {
         this.skeleton = skeleton;
-        skeleton.name = GenerateCoolName();
+        skeleton.name = GeneEncoding.GenerateLatinName();
         DisplayName(skeleton);
-        primaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-        secondaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
+        primaryColor = primary;
+        secondaryColor = secondary;
         SetBodySize(bodySize);
         SetHeadAndEyeSize(eyeSize);
         SetLegSize(legSize);
@@ -69,48 +69,7 @@ public class Body
         }
     }
 
-    private string GenerateCoolName()
-    {
-        System.Random r = new System.Random();
-        int lenFirst = r.Next(2, 6);
-        int lenLast = r.Next(2, 6);
-        string[] consonants = { "b", "c", "d", "f", "g", "h", "j", "l", "m", "l", "n", "p", "q", "r", "s", "sh", "t" };
-        string[] vowels = { "a", "e", "i", "o", "u", "ae", "y" };
-        string[] ends = {"o", "is", "us","ien","a"};
-        string firstName = "";
-        firstName += consonants[r.Next(consonants.Length)].ToUpper();
-        firstName += vowels[r.Next(vowels.Length)];
-        int c = 2; //b tells how many times a new letter has been added. It's 2 right now because the first two letters are already in the name.
-        while (c < lenFirst)
-        {
-            firstName += consonants[r.Next(consonants.Length)];
-            c++;
-            firstName += vowels[r.Next(vowels.Length)];
-            c++;
-        }
 
-        firstName += consonants[r.Next(consonants.Length)];
-        c++;
-        firstName += ends[r.Next(ends.Length)];
-        c++;
-        string secondName = "";
-        secondName += consonants[r.Next(consonants.Length)].ToUpper();
-        secondName += vowels[r.Next(vowels.Length)];
-        c = 2; //b tells how many times a new letter has been added. It's 2 right now because the first two letters are already in the name.
-        while (c < lenLast)
-        {
-            secondName += consonants[r.Next(consonants.Length)];
-            c++;
-            secondName += vowels[r.Next(vowels.Length)];
-            c++;
-        }
-        secondName += consonants[r.Next(consonants.Length)];
-        c++;
-        secondName += ends[r.Next(ends.Length)];
-        c++;
-
-        return firstName + " " + secondName;
-    }
 
     private void DisplayName(GameObject parent)
     {
