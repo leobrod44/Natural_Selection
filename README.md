@@ -6,7 +6,7 @@ Procedurally generated biomes and creatures controlled by neural networks for re
 
 ### Natural habitat generation
 
-- World generated randomly to ensure removal of fixed variables during reproduction process. Spawning tiles which can have various properties and contain elements such as food, obstacles, water and trees. Lakes generated with a doubly recursive function. Current implementation [Layout.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/Layout.cs) and [Area.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/Area.cs)
+- World generated randomly to ensure removal of fixed variables during reproduction process. Spawning tiles which can have various properties and contain elements such as food, obstacles, water and trees. Lakes generated with a doubly recursive function. Current implementation [Engine.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/Engine.cs) and [Area.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/Area.cs)
 
 
  medium nature density     |          low nature density  |     high nature density                  
@@ -33,7 +33,7 @@ Procedurally generated biomes and creatures controlled by neural networks for re
  - ## Functionality
       - Characters will always be in movement unless they are eating, drinking or breeding. Depending on their Network, creatures will be responding to situations solely  by changing directions
  - ## Activation function
-      - Hyberbolic tangent activation function
+      - Hyberbolic tangent activation function since we desire an output neuron classification because he desired output is currently one action
  - ## Current Sensor and Actor Neurons
       - Neurons implemented in [ActionNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/ActionNeuron.cs) and [SensorNeuron.cs](https://github.com/leobrod44/Natural_Selection_Simulator/blob/main/Animals/Assets/Scripts/SensorNeuron.cs). All implementing methods to be assigned to a delegate according to the neural net during runtime.
 ![image0](https://user-images.githubusercontent.com/65002959/214120041-79461f3e-46cf-4db1-b236-3de10bbfb513.jpeg)
