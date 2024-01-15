@@ -20,6 +20,14 @@ public class Brain
     private HashSet<int> usedActors;
     public GameObject Parent { get; set; }
 
+    public Vector3 nearestWater;
+
+    public Vector3 nearestFood;
+
+    public Vector3 nearestAlly;
+
+    private Vector3 nearestEnemy;
+
     private Engine engine;
     public Brain(GameObject parent)
     {
@@ -33,13 +41,20 @@ public class Brain
             {4, new WaterDistanceSidesSensor(parent)},
             {5, new FoodDistanceForwardSensor(parent)},
             {6, new FoodDistanceSidesSensor(parent)},
-            {7, new RotateSlightRightAction(parent)},
-            {8, new RotateSlightLeftAction(parent)},
-            {9, new RotateQuarterRightAction(parent)},
-            {10, new RotateQuarterLeftAction(parent)},
-            {11, new TurnAroundAction(parent)},
-            {12, new RotateRandomAction(parent)},
-            {13, new DoNothingAction(parent)},
+            //{Ally distance
+            //{Enemy distance
+            {7, new TargetWater(parent)},
+            {8, new TargetFood(parent)},
+            {9, new RotateRandomAction(parent)},
+            //{7, new RotateSlightRightAction(parent)},
+            //{8, new RotateSlightLeftAction(parent)},
+            //{9, new RotateQuarterRightAction(parent)},
+            //{10, new RotateQuarterLeftAction(parent)},
+            //{11, new TurnAroundAction(parent)},
+            //{12, new RotateRandomAction(parent)},
+            //{13, new DoNothingAction(parent)},
+            
+
         };
 
         Neurons = new Dictionary<int, Neuron>();
@@ -48,11 +63,76 @@ public class Brain
         usedActors = new HashSet<int>();
         InitializeBrain(engine.numberOfSensorNeurons,engine.numberOfInnerNeurons);
     }
-    
+
 
 
     #region Building Brain
     public void InitializeBrain(int numSensorNeurons, int numInternalNeurons)
+    {
+        HashSet<int> usedSensors = new HashSet<int>();
+        HashSet<int> availableActors = new HashSet<int>();
+        HashSet<int> usedInternals = new HashSet<int>();
+        System.Random rand;
+
+        //generate sensors
+        rand = new System.Random();
+        usedSensors = new HashSet<int>(Enumerable.Range(1, Neuron.lastInputNeuron));
+
+        //generate actors TODO rand range going to like 18
+        rand = new System.Random();
+        availableActors = new HashSet<int>(Enumerable.Range(Neuron.lastInputNeuron + 1, Neuron.totalNeuronsAvailable - Neuron.lastInputNeuron));
+
+        //generate inner neurons
+        int innerNeuronCount = -1;
+        for (int i = 0; i < numInternalNeurons; i++)
+        {
+            Neuron innerNeuron = new InnerNeuron(Parent, innerNeuronCount);
+            AllNeurons.Add(innerNeuron.Id, innerNeuron);
+            usedInternals.Add(innerNeuron.Id);
+            innerNeuronCount--;
+        }
+
+        //store all used neurons
+        foreach (var Id in usedSensors.Union(availableActors.Union(usedInternals)))
+        {
+            Neurons.Add(Id, AllNeurons[Id]);
+        }
+        //generate connections
+
+        var unionedSensorInner = new HashSet<int>(usedSensors.Union(usedInternals));
+        var unionedActorInner = new HashSet<int>(availableActors.Union(usedInternals));
+
+        //create sensor connections
+        foreach (int id in usedSensors)
+        {
+            foreach(int id2 in usedInternals)
+            {
+                var weight = UnityEngine.Random.Range(-4f, 4f);
+                //weird edge case where weight is 0 although float
+                weight = weight == 0f ? 0.01f : weight;
+                string connection = CreateConnection(id, id2, weight);
+                SensorConnections.Add(connection);
+            }
+        }
+        //create inner neuron connections
+        foreach (int id in usedInternals)
+        {
+            foreach(int id2 in availableActors)
+            {
+                var weight = UnityEngine.Random.Range(-4f, 4f);
+                //weird edge case where weight is 0 although float
+                weight = weight == 0f ? 0.01f : weight;
+                string connection = CreateConnection(id, id2, weight);
+                InnerConnections.Add(connection);
+            }
+        }
+
+        //store neuron iDs
+        Sensors = usedSensors.ToArray();
+        Inners = usedInternals.ToArray();
+        Actors = usedActors.ToArray();
+    }
+        public void InitializeBrainDep(int numSensorNeurons, int numInternalNeurons)
     {
         HashSet<int> usedSensors = new HashSet<int>();
         HashSet<int> availableActors = new HashSet<int>();
@@ -170,7 +250,7 @@ public class Brain
     {
         SetSensorValues();
         //propagate inner neurons first, since actor neurons can depend on inner neurons propagation output
-        foreach(int id in Inners)
+        foreach (int id in Inners)
         {
             FeedForwardInternal<InnerNeuron>(Neurons[id]);
         }
@@ -182,6 +262,7 @@ public class Brain
 
     private void SetSensorValues()
     {
+        //Scan nearby values
         for (int i = 0; i < Sensors.Length; i++)
         {
             try
@@ -225,6 +306,7 @@ public class Brain
         //return Tuple<float, List<Tuple<InnerNeuron, InnerNeuron>>>(sum, innerNeurons);
         var activatedValue = (float)Math.Tanh(sum);
         destinationNeuron.SetActivatedValue(activatedValue);
+        //Debug.Log("Weights : " + destinationNeuron.GetWeights().ToString());
 
         //if (originneuron is innerneuron)
         //{

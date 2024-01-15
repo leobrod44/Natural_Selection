@@ -19,7 +19,7 @@ public class Animal: MonoBehaviour
 
     //states
     [SerializeField]
-    private float speed;
+    public float speed;
     
     public int eyeSight;
     
@@ -37,6 +37,9 @@ public class Animal: MonoBehaviour
     private bool eating;
     private bool drinking;
     private bool outOfBounds;
+    private float birth;
+    private float death;
+    public float age;
     private Engine engine;
     public Body body;
     private List<Interests> interests;
@@ -79,29 +82,41 @@ public class Animal: MonoBehaviour
         engine = GameObject.Find("Engine").GetComponent<Engine>();
         PerformAction = DefaultMovement;
         canMove = true;
-        currentArea = engine.sections[(int)transform.position.x, (int)transform.position.z];
-        currentPosition = new Tuple<int, int>((int)transform.position.x, (int)transform.position.z);
+        try
+        {
+            currentArea = engine.sections[(int)transform.position.x, (int)transform.position.z];
+            currentPosition = new Tuple<int, int>((int)transform.position.x, (int)transform.position.z);
+        }
+        catch
+        {
+            Kill();
+        }
+     
         
         currentFood = maxFood;
         currentWater = maxWater;
         outOfBounds = false;
-        speed = 2;
-        eyeSight = 10;
+        birth = Time.time;
         //interests = new List<Interests>();
         //interests.Add(Interests.WaterF);
         //interests.Add(Interests.WaterS);
-        Debug.Log(brain.Neurons);
+        //Debug.Log(brain.Neurons);
+    }
+    protected void LateUpdate()
+    {
+        transform.localEulerAngles = new Vector3(0, transform.localEulerAngles.y, 0);
+        gameObject.transform.Find("Name tag").transform.rotation = Camera.main.transform.rotation;
+        gameObject.transform.position = new Vector3(gameObject.transform.position.x, 0.9f, gameObject.transform.position.z);
     }
     void Update()
     {
         //verify sensors, 
-        
-        
         if (canMove)
         {
             transform.position += transform.forward * speed * Time.deltaTime;
             CheckTile();
             Scan();
+
             if (Time.time > decisionTimer + engine.animalDecisionRate && !outOfBounds)
             {
                 try
@@ -126,9 +141,15 @@ public class Animal: MonoBehaviour
     {
         if (currentFood <= 0 || currentWater <= 0)
         {
-            gameObject.SetActive(false);
-            Generation.currentPopulationSize--;
+            Kill();
         }
+    }
+    private void Kill()
+    {
+        death = Time.time;
+        gameObject.SetActive(false);
+        age = death - birth;
+        Generation.currentPopulationSize--;
     }
 
 
@@ -153,8 +174,8 @@ public class Animal: MonoBehaviour
         }
         catch
         {
-            Debug.Log(currentPosx);
-            Debug.Log(currentPosy);
+            //Debug.Log(currentPosx);
+            //Debug.Log(currentPosy);
         }
         //refreshes tiles once moved
         if (area.Tile != currentArea.Tile)
@@ -168,20 +189,19 @@ public class Animal: MonoBehaviour
 
     private void CheckTile()
     {
-        int currentPosx = (int)transform.position.x;
-        int currentPosy = (int)transform.position.z;
-        if (currentPosx != currentPosition.Item1 || currentPosy != currentPosition.Item2)
+        try
         {
-            currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
-            try
+            int currentPosx = (int)transform.position.x;
+            int currentPosy = (int)transform.position.z;
+            if (currentPosx != currentPosition.Item1 || currentPosy != currentPosition.Item2)
             {
+                currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
                 area = engine.sections[currentPosx, currentPosy];
             }
-            catch
-            {
-                Debug.Log(currentPosx);
-                Debug.Log(currentPosy);
-            }
+        }
+        catch
+        {
+            Kill();
         }
         //refreshes tiles once moved
         if (area.Tile != currentArea.Tile)
@@ -218,14 +238,14 @@ public class Animal: MonoBehaviour
     }
     private void Eat()
     {
-        if (!eating)
+        if (!eating && currentArea.Element.activeInHierarchy)
         {
             currentFood = maxFood;
-            DestroyImmediate(currentArea.Element);
-            currentArea.Element = null;
+            currentArea.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.red; // Set element color to white
+            currentArea.Element.SetActive(false);
             currentArea.Type = AreaType.Grass;
-            StartCoroutine(Eating(2));
-            StartCoroutine(StopInPlace(2));
+            //StartCoroutine(Eating(2));
+            //StartCoroutine(StopInPlace(2));
         }
         
     }
@@ -233,8 +253,8 @@ public class Animal: MonoBehaviour
     private void Drink()
     {
         currentWater = maxWater;
-        StartCoroutine(StopInPlace(engine.drinkTime));
-        StartCoroutine(ResetWater(5));
+        //StartCoroutine(StopInPlace(engine.drinkTime));
+        //StartCoroutine(ResetWater(5));
     }
 
     private IEnumerator ResetWater(float seconds)
@@ -267,8 +287,8 @@ public class Animal: MonoBehaviour
 
     private void Tick()
     {
-        currentWater -= Time.deltaTime * (speed + eyeSight) * 1f / engine.depletionConstant;
-        currentFood -= Time.deltaTime * (speed + eyeSight) * 1f / engine.depletionConstant;
+        currentWater -= Time.deltaTime * engine.waterDepletionConstant;
+        currentFood -= Time.deltaTime * engine.foodDepletionConstant;
     }
 
     // input of 0 to 1 -> connection weight -4.0f to 4.0f, neutral neuron tanh(sum(inputs)) -1 to 1, action neuron tanh(sum(inputs)) -1, 1

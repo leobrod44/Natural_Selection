@@ -82,3 +82,4 @@ public enum AreaType
     Obstacle,
     Grass
 }
+

@@ -12,6 +12,8 @@ public class Body
 
     public int AnimalIdentifier;
 
+    public String name;
+
     #region Physical Components
     public GameObject skeleton;
     public GameObject Torso => skeleton.gameObject;
@@ -25,6 +27,7 @@ public class Body
     {
         this.skeleton = skeleton;
         skeleton.name = GeneEncoding.GenerateLatinName();
+        name = skeleton.name;
         DisplayName(skeleton);
         primaryColor = primary;
         secondaryColor = secondary;
@@ -75,10 +78,12 @@ public class Body
     {
         GameObject nameDisplay = new GameObject("Name tag");
         nameDisplay.transform.rotation = Camera.main.transform.rotation;
+        nameDisplay.transform.LookAt(nameDisplay.transform.position + Camera.main.transform.rotation * Vector3.forward, Camera.main.transform.rotation * Vector3.up);
         TextMesh tm = nameDisplay.AddComponent<TextMesh>();
         tm.text = parent.name;
         nameDisplay.transform.parent = parent.transform;
         nameDisplay.transform.position = new Vector3(parent.transform.position.x, parent.transform.position.y+1, parent.transform.position.z);
+        
         tm.color = Color.magenta;
         tm.fontStyle = FontStyle.Bold;
         tm.alignment = TextAlignment.Center;

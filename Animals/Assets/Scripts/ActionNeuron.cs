@@ -35,7 +35,7 @@ public abstract class ActionNeuron: Neuron, Destination
 
 public class RotateSlightRightAction : ActionNeuron
 {
-    private const int id = 7;
+    private const int id = 14;
     public RotateSlightRightAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
@@ -50,7 +50,7 @@ public class RotateSlightRightAction : ActionNeuron
 
 public class RotateSlightLeftAction : ActionNeuron
 {
-    private const int id = 8;
+    private const int id = 15;
     public RotateSlightLeftAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
@@ -108,10 +108,9 @@ public class TurnAroundAction : ActionNeuron
     }
 }
 
-
 public class RotateRandomAction : ActionNeuron
 {
-    private const int id = 12;
+    private const int id = 9;
     public RotateRandomAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
@@ -139,3 +138,55 @@ public class DoNothingAction : ActionNeuron
         
     }
 }
+public class TargetFood : ActionNeuron
+{
+    private const int id = 7;
+    private Vector3 foodPosition;
+
+    public TargetFood(GameObject parent) : base(parent)
+    {
+        animal = parent.GetComponent<Animal>();
+        Id = id;
+       
+    }
+
+    public override void DoAction()
+    {
+        this.foodPosition = brain.nearestFood;
+        Vector3 foodDirection = foodPosition - parent.transform.position;
+        Quaternion foodRotation = Quaternion.LookRotation(foodDirection);
+        parent.transform.rotation = foodRotation;
+    }
+}
+
+public class TargetWater : ActionNeuron
+{
+    private const int id = 8;
+    private Vector3 waterPosition;
+    public TargetWater(GameObject parent) : base(parent)
+    {
+        animal = parent.GetComponent<Animal>();
+        Id = id;
+        
+    }
+    public override void DoAction()
+    {
+        this.waterPosition = brain.nearestWater;
+        Vector3 waterDirection = waterPosition - parent.transform.position;
+        Quaternion waterRotation = Quaternion.LookRotation(waterDirection);
+        parent.transform.rotation = waterRotation;
+    }
+    
+
+}
+//public class Breed : ActionNeuron
+//{
+    
+//}
+//public class Kill : ActionNeuron
+//{
+//}
+////scout/call?
+//public class Call : ActionNeuron
+//{
+//}

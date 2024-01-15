@@ -4,20 +4,22 @@ using UnityEngine;
 using System.Linq;
 using System;
 using Random = UnityEngine.Random;
+using static System.Collections.Specialized.BitVector32;
 
 public class Generation : MonoBehaviour
 {
     // Start is called before the first frame update
 
     public int selectionPercentage;
-    public int timeForSelection;
+    public int deadline;
     public int mutationPercentage;
     private Engine engine;
     [SerializeField]
-    private List<GameObject> currentPopulation;
+    public List<GameObject> currentPopulation;
     public static int currentPopulationSize;
     private List<GameObject> survivors;
     private float time;
+    private bool timeLimitFlag=true;
     private bool survivorListSet;
     // brain constructors to give neural net
     // brain function to breen characters
@@ -27,28 +29,31 @@ public class Generation : MonoBehaviour
 
     void Start()
     {
-        Time.timeScale= 2f;
         engine = GameObject.Find("Engine").GetComponent<Engine>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(Time.time > time + timeForSelection && !survivorListSet)
+        if (Time.time > time + deadline || currentPopulationSize<=0)
         {
-            survivors = currentPopulation.Where(x => x.activeSelf).ToList();
-            survivorListSet = true;
+            try
+            {
+                //survivors = currentPopulation.Where(x => x.activeInHierarchy).ToList();
+                float t = Time.time - time;
+                GenerateNewPopulation(currentPopulation);
+                time = Time.time;
+                Debug.Log(" age: " + t);
+            }
+            catch (Exception e)
+            {
+                Debug.Log(e);
+            }
+          
         }
-        if (currentPopulationSize <= 0 && survivorListSet)
-        {
-            if (survivors.Count > 0)
-                GenerateNewPopulation();
-            else
-                GenerateInitialPopulation();
-
-        }
+       
         //TODO 
-        //fix animals getting out of bounds, i think the error of currenttile fucks em try catch
+        //fix animals getting out of bounds, i think the error of currenttile messes them em try catch
         //make names face camera: probably rotation*-1
         //add layer, optimize network
         //add UI, make name breeding by type, 
@@ -67,14 +72,10 @@ public class Generation : MonoBehaviour
     private List<GameObject> SelectTop(List<GameObject> population)
     {
         //TODO change selection according to fitness
-        int percentage = ((int)((float)selectionPercentage / 100 * (float)engine.animalCount));
-        int maxNum = percentage <= population.Count ? percentage: population.Count ;
-        List<GameObject> selected = new List<GameObject>();
-        for (int i = 0; i < maxNum; i++)
-        {
-            selected.Add(population[i]);
-        }
-        return selected;
+        int numAnimals = ((int)((float)selectionPercentage / 100 * (float)engine.animalCount));
+        //int maxNum = percentage <= population.Count ? percentage: population.Count ;
+        List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().age).ToList();
+        return ageOrdered.Take(numAnimals).ToList();
     }
     //TODO how to breed? how to return, bred all genes between both? also fill rest of animals
     //maybe while !full keep foreaching
@@ -86,15 +87,15 @@ public class Generation : MonoBehaviour
         while (newPopulation.Count < engine.animalCount)
         {
             List<GameObject> survivorPool = new List<GameObject>(survivorObjs);
-            if(newPopulation.Count+survivorObjs.Count > engine.animalCount)
-            {
-                survivorObjs = survivorObjs.Take(engine.animalCount - newPopulation.Count).ToList();
-            }
+            //if(newPopulation.Count+survivorObjs.Count > engine.animalCount)
+            //{
+            //    survivorObjs = survivorObjs.Take(engine.animalCount - newPopulation.Count).ToList();
+            //}
             if (survivorObjs.Count > 1)
             {
                 foreach (var survivor in survivorObjs)
                 {
-                    if (survivorPool.Count <= 1)
+                    if (survivorPool.Count <= 1 || newPopulation.Count >= engine.animalCount)
                         break;
                     GameObject other = survivor;
                     while (other == survivor)
@@ -124,6 +125,54 @@ public class Generation : MonoBehaviour
     }
     private Tuple<Brain,Brain> BreedBrain(GameObject animal1, GameObject animal2)
     {
+        System.Random rand = new System.Random();
+
+        Brain brain1 = animal1.GetComponent<Animal>().brain;
+        Brain brain2 = animal2.GetComponent<Animal>().brain;
+
+        List<string> sensorConnections1 = brain1.SensorConnections;
+        List<string> sensorConnections2 = brain2.SensorConnections;
+        
+
+        for (int i = 0; i < sensorConnections1.Count; i++)
+        {
+            int r = rand.Next(3);
+            if (r == 0)
+            {
+                string temp = sensorConnections1[i];
+                sensorConnections1[i] = sensorConnections2[i];
+                sensorConnections2[i] = temp;
+            }
+            else if (r == 1)
+            {
+                var meanedWeights = MeanWeights(sensorConnections1[i], sensorConnections2[i]);
+                sensorConnections1[i] = meanedWeights.Item1;
+                sensorConnections2[i] = meanedWeights.Item2;
+            }
+        }
+
+        List<string> innerConnections1 = brain1.InnerConnections;
+        List<string> innerConnections2 = brain2.InnerConnections;
+
+        for (int i = 0; i < innerConnections1.Count; i++)
+        {
+            int r = rand.Next(3);
+            if (r == 0)
+            {
+                string temp = innerConnections1[i];
+                innerConnections1[i] = innerConnections2[i];
+                innerConnections2[i] = temp;
+            }
+            else if (r == 1)
+            {
+
+            }
+        }
+
+        return new Tuple<Brain, Brain>(brain1, brain2);
+    }
+    private Tuple<Brain, Brain> BreedBrainDep(GameObject animal1, GameObject animal2)
+    {
         Brain brain1 = animal1.GetComponent<Animal>().brain;
         Brain brain2 = animal2.GetComponent<Animal>().brain;
         List<string> sensorConnections1 = brain1.SensorConnections;
@@ -139,8 +188,10 @@ public class Generation : MonoBehaviour
         brain1.InnerConnections = bredInnerSections.Item1;
         brain2.InnerConnections = bredInnerSections.Item2;
 
+
         return new Tuple<Brain, Brain>(brain1, brain2);
     }
+
     private void BreedBodies(GameObject animal1, GameObject animal2)
     {
         Body body1 = animal1.GetComponent<Animal>().body;
@@ -163,6 +214,7 @@ public class Generation : MonoBehaviour
 
         //TODO breed size;
     }
+
     private Tuple<List<string>,List<string>> BreedSections(List<string> section1, List<string> section2)
     {
         var length = Math.Max(section1.Count, section2.Count);
@@ -218,8 +270,27 @@ public class Generation : MonoBehaviour
 
         return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
     }
+    private Tuple<string, string> MeanWeights(string connection1, string connection2)
+    {
+        string binary1 = GeneEncoding.HexToBin(connection1);
+        string binary2 = GeneEncoding.HexToBin(connection2);
+        var x = binary1.Length;
+
+        float val1 = GeneEncoding.BinaryToWeight(binary1.Substring(16, 16));
+        float val2 = GeneEncoding.BinaryToWeight(binary2.Substring(16, 16));
+
+        float mean = (val1 + val2) / 2f;
+
+        binary1 = binary1.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
+
+        binary2 = binary2.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
+
+        return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
+
+    }
     public void GenerateInitialPopulation()
     {
+        //Clean();
         engine = GameObject.Find("Engine").GetComponent<Engine>();
         currentPopulation = new List<GameObject>();
         for (int i = 0; i < engine.animalCount; i++)
@@ -229,13 +300,35 @@ public class Generation : MonoBehaviour
             var legSize = Random.Range(0.2f, 0.8f);
             var primaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
             var secondaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-            CreateAnimal(bodySize, eyeSize, legSize, primaryColor, secondaryColor);
+            var newAnimal = CreateAnimal(bodySize, eyeSize, legSize, primaryColor, secondaryColor);
+            currentPopulation.Add(newAnimal);
         }
         currentPopulationSize = currentPopulation.Count;
     }
-    public void GenerateNewPopulation()
+    public void Clean()
     {
-        List<GameObject> topSurvivors = SelectTop(survivors);
+        foreach (var animal in currentPopulation)
+        {
+            Destroy(animal);
+        }
+       // currentPopulation.Clear();
+    }
+    public void ResetMap()
+    {
+        foreach (var area in engine.foodAreas)
+        {
+            area.Element.SetActive(true);
+            area.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.green;
+        }
+        Clean();
+        
+    }
+
+    public void GenerateNewPopulation(List<GameObject> pop)
+    {
+        //Clean();
+        ResetMap();
+        List<GameObject> topSurvivors = SelectTop(pop);
         List<GameObject> newPopulation = BreedAnimals(topSurvivors);
         
         List<GameObject> previousPop = new List<GameObject>(currentPopulation);
@@ -259,21 +352,23 @@ public class Generation : MonoBehaviour
         survivorListSet = false;
     }
 
-    public void CreateAnimal(float bodySize, float eyeSize, float legSize, Color primary, Color secondary)
+    public GameObject CreateAnimal(float bodySize, float eyeSize, float legSize, Color primary, Color secondary)
     {
         var x = Random.Range(0, Engine.MAPSIZE - 1);
         var y = Random.Range(0, Engine.MAPSIZE - 1);
         GameObject newAnimal = Instantiate(engine.availableSkeletons[0]);
-        newAnimal.transform.position = new Vector3(x, 0.5f, y);
+        newAnimal.transform.position = new Vector3(x, 0.9f, y);
         Body newAnimalBody = new Body(newAnimal, bodySize, eyeSize, legSize, primary, secondary);
         newAnimal.GetComponent<Animal>().body = newAnimalBody;
-        currentPopulation.Add(newAnimal);
+        return newAnimal;
     }
     public void CreateAnimal(GameObject animal)
     {
 
         GameObject newAnimal = Instantiate(animal);
-        newAnimal.transform.position = new Vector3(animal.transform.position.x, 0.5f, animal.transform.position.z);
+        var x = Random.Range(0, Engine.MAPSIZE - 1);
+        var y = Random.Range(0, Engine.MAPSIZE - 1);
+        newAnimal.transform.position = new Vector3(x, 0.5f, y);
         var angle = UnityEngine.Random.Range(0, 360f);
         var dir = new Vector3(Mathf.Sin(Mathf.Deg2Rad * angle), 0, Mathf.Cos(Mathf.Deg2Rad * angle));
         transform.rotation = new Quaternion(dir.x, dir.y, dir.z, 180f);

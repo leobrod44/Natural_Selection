@@ -16,11 +16,13 @@ public class Engine : MonoBehaviour
     public int puddleSize;
     [HideInInspector]
     public Area[,] sections;
+    public List<Area> foodAreas;
     public Severity density;
     public Severity grassRate;
     public Severity obstacleRate;
     public Severity treeRate;
     public Severity plantRate;
+    public float timeScale;
     public List<Material> materials;
 
     #region Nature Accessers
@@ -31,6 +33,7 @@ public class Engine : MonoBehaviour
     private List<UnityEngine.Object> Trees { get; set; }
     private List<UnityEngine.Object> Plants { get; set; }
     private List<string> plantNames;
+    private List<List<UnityEngine.Object>> objects { get; set; }
 
     [Header("Animal parameters")]
     public List<GameObject> availableSkeletons;
@@ -39,22 +42,24 @@ public class Engine : MonoBehaviour
     public int numberOfInnerNeurons;
     public int numberOfInnerLayers;
     public float animalDecisionRate;
-    public float depletionConstant;
+    public float waterDepletionConstant;
+    public float foodDepletionConstant;
     public Tuple<int, int> eyeSightRange;
+    
 
     [Header("Context parameters")]
     public float eatTime;
     public float drinkTime;
     public float reproduceTime;
 
-    private Generation generation;
+    public Generation generation;
 
     #endregion
     void Awake()
     {
         Initialize();
         
-        //Time.timeScale = 3;
+        Time.timeScale = timeScale;
     }
     void Start()
     {
@@ -70,7 +75,6 @@ public class Engine : MonoBehaviour
         LoadNatureElements();
         CreateSections(numberOfPuddles);
         var X = animalCount;
-
     }
 
     //public void CreateAnimal(AnimalType type)
@@ -182,55 +186,12 @@ public class Engine : MonoBehaviour
 
     private void GenerateGrass()
     {
-        for (int i = 0; i < mapSize; i++)
-        {
-            for (int j = 0; j < mapSize; j++)
-            {
-                if (sections[i, j] == null)
-                {
-                    sections[i, j] = new GrassArea(i, j);
-                    GameObject element = GenerateNatureObjects(i, j);
-                    if (element != null)
-                    {
-                        sections[i, j].Element = element;
-
-                        if (plantNames.Contains(element.name.Replace("(Clone)", "")))
-                        {
-                            sections[i, j].Type = AreaType.Food;
-                        }
-                        else
-                        {
-                            sections[i, j].Type = AreaType.Grass;
-                        }
-                        //else if(Grass.Contains((UnityEngine.Object)element))
-                        //{
-
-                        //}
-
-                    }
-                }
-            }
-        }
-    }
-
-    private GameObject GenerateNatureObjects(int x , int y)
-    {
-        float hitRate = (float)density / 5f;
-        float successCondition = UnityEngine.Random.Range(0f, 1f);
-        if (successCondition > hitRate)
-        {
-            return null;
-        }
-        int grass= (int)grassRate;
+        int grass = (int)grassRate;
         int obstacle = (int)obstacleRate;
         int tree = (int)treeRate;
-        int  plant = (int)plantRate;
-        var total = grass + obstacle + plant+tree;
-        if(total ==0)
-        {
-            return null;
-        }
-        List<List<UnityEngine.Object>> objects = new List<List<UnityEngine.Object>>();
+        int plant = (int)plantRate;
+        var total = grass + obstacle + plant + tree;
+        objects = new List<List<UnityEngine.Object>>();
 
         for (int i = 0; i < grass; i++)
         {
@@ -248,8 +209,45 @@ public class Engine : MonoBehaviour
         {
             objects.Add(Plants);
         }
+
+        for (int i = 0; i < mapSize; i++)
+        {
+            for (int j = 0; j < mapSize; j++)
+            {
+                if (sections[i, j] == null)
+                {
+                    sections[i, j] = new GrassArea(i, j);
+                    GameObject element = GenerateNatureObjects(i, j, total);
+                    if (element != null)
+                    {
+                        sections[i, j].Element = element;
+
+                        if (plantNames.Contains(element.name.Replace("(Clone)", "")))
+                        {
+                            sections[i, j].Type = AreaType.Food;
+                            foodAreas.Add(sections[i, j]);
+                            element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.yellow; // Set element color to white
+                        }
+                        else
+                        {
+                            sections[i, j].Type = AreaType.Grass;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private GameObject GenerateNatureObjects(int x , int y, int limit)
+    {
+        float hitRate = (float)density / 5f;
+        float successCondition = UnityEngine.Random.Range(0f, 1f);
+        if (successCondition > hitRate)
+        {
+            return null;
+        }
         //add tree factor because a lot
-        var random = UnityEngine.Random.Range(0, total);
+        var random = UnityEngine.Random.Range(0, limit);
         var scaleChange = UnityEngine.Random.Range(0, 2);
         GameObject newElement = Instantiate(objects[random][UnityEngine.Random.Range(0, objects[random].Count)] as GameObject);
         newElement.transform.position = new Vector3(x, 0, y);
