@@ -39,29 +39,25 @@ public static class GeneEncoding
     public static string FloatToBinary(float num)
     {
         int value;
-        try
+
+        value = (int)(num * largePrime);
+        string fmt = "0000000000000000.##";
+        string bin = "";
+        if (num > 0)
+            bin = Convert.ToInt64(Convert.ToString(value, 2)).ToString(fmt);
+        else
         {
-            value = (int)(num * largePrime);
-            string fmt = "0000000000000000.##";
-            string bin = "";
-            if (num > 0)
-                bin = Convert.ToInt64(Convert.ToString(value, 2)).ToString(fmt);
-            else
+            bin = Convert.ToString(value, 2);
+            if (bin == "0")
             {
-                bin = Convert.ToString(value, 2);
-                if (bin == "0")
-                {
-                    bin = "0000000000000001";
-                }
-                bin = bin.Substring(bin.Length - 16);
+                bin = "0000000000000001";
             }
-            float val = BinaryToFloat(bin);
-            return bin;
+            bin = bin.Substring(bin.Length - 16);
         }
-        catch (Exception e)
-        {
-            throw e;
-        }
+        float val = BinaryToFloat(bin);
+        return bin;
+        
+
        
     }
 

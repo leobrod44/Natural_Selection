@@ -84,11 +84,11 @@ public class FoodLevelSensor : SensorNeuron
     }
 }
 
-public class WaterDistanceForwardSensor : SensorNeuron
+public class WaterDistanceSensor : SensorNeuron
 {
     const int WATERLAYER = 4;
     private const int id = 3;
-    public WaterDistanceForwardSensor(GameObject parent) : base(parent)
+    public WaterDistanceSensor(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
         Id = id;
@@ -103,46 +103,19 @@ public class WaterDistanceForwardSensor : SensorNeuron
             var closestWater = GetClosestTile(inRadiusWater);
             brain.nearestWater = closestWater;
             var distanceVector = GetDistance(closestWater);
-            var pos = parent.transform.position;
-            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Cos(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
+            closest = distanceVector.magnitude * 1 / animal.eyeSight;
         }
-        //Debug.Log("Water: " + closest);
+
         SetOriginValue(closest);
     }
 }
 
-public class WaterDistanceSidesSensor : SensorNeuron
+public class FoodDistanceSensor : SensorNeuron
 {
-    const int WATERLAYER = 4;
+
+    const int FOODLAYER = 7;
     private const int id = 4;
-    public WaterDistanceSidesSensor(GameObject parent) : base(parent)
-    {
-        animal = parent.GetComponent<Animal>();
-        Id = id;
-    }
-    public override void SetSensorValue()
-    {
-
-        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
-        float closest = 0;
-        if (inRadiusWater.Length > 0)
-        {
-            var closestWater = GetClosestTile(inRadiusWater);
-            brain.nearestWater = closestWater;
-            var distanceVector = GetDistance(closestWater);
-            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
-        }
-        //Debug.Log("Water: " + closest);
-        SetOriginValue(closest);
-    }
-}
-public class FoodDistanceForwardSensor : SensorNeuron
-{
-    const int FOODLAYER = 7;
-    private const int id = 5;
-    public FoodDistanceForwardSensor(GameObject parent) : base(parent)
+    public FoodDistanceSensor(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
         Id = id;
@@ -157,38 +130,118 @@ public class FoodDistanceForwardSensor : SensorNeuron
             var closestFood = GetClosestTile(inRadiusFood);
             brain.nearestFood = closestFood;
             var distanceVector = GetDistance(closestFood);
-            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Cos(angle) * distanceVector.magnitude *1/animal.eyeSight;
-        }
-
-        //Debug.Log("Food: " + closest);
-        SetOriginValue(closest);
-    }
-}
-
-public class FoodDistanceSidesSensor : SensorNeuron
-{
-    const int FOODLAYER = 7;
-    private const int id = 6;
-    public FoodDistanceSidesSensor(GameObject parent) : base(parent)
-    {
-        animal = parent.GetComponent<Animal>();
-        Id = id;
-    }
-    public override void SetSensorValue()
-    {
-
-        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
-        float closest = 0;
-        if (inRadiusFood.Length > 0)
-        {
-            var closestFood = GetClosestTile(inRadiusFood);
-            brain.nearestFood = closestFood;
-            var distanceVector = GetDistance(closestFood);
-            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
+            closest =distanceVector.magnitude * 1 / animal.eyeSight;
         }
         //Debug.Log("Food: " + closest);
         SetOriginValue(closest);
     }
 }
+
+//public class WaterDistanceForwardSensor : SensorNeuron
+//{
+//    const int WATERLAYER = 4;
+//    private const int id = 5;
+//    public WaterDistanceForwardSensor(GameObject parent) : base(parent)
+//    {
+//        animal = parent.GetComponent<Animal>();
+//        Id = id;
+//    }
+//    public override void SetSensorValue()
+//    {
+
+//        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
+//        float closest = 0;
+//        if (inRadiusWater.Length > 0)
+//        {
+//            var closestWater = GetClosestTile(inRadiusWater);
+//            brain.nearestWater = closestWater;
+//            var distanceVector = GetDistance(closestWater);
+//            var pos = parent.transform.position;
+//            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
+//            closest = Mathf.Cos(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
+//        }
+//        //Debug.Log("Water: " + closest);
+//        SetOriginValue(closest);
+//    }
+//}
+
+//public class WaterDistanceSidesSensor : SensorNeuron
+//{
+//    const int WATERLAYER = 4;
+//    private const int id = 6;
+//    public WaterDistanceSidesSensor(GameObject parent) : base(parent)
+//    {
+//        animal = parent.GetComponent<Animal>();
+//        Id = id;
+//    }
+//    public override void SetSensorValue()
+//    {
+
+//        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
+//        float closest = 0;
+//        if (inRadiusWater.Length > 0)
+//        {
+//            var closestWater = GetClosestTile(inRadiusWater);
+//            brain.nearestWater = closestWater;
+//            var distanceVector = GetDistance(closestWater);
+//            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
+//            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
+//        }
+//        //Debug.Log("Water: " + closest);
+//        SetOriginValue(closest);
+//    }
+//}
+//public class FoodDistanceForwardSensor : SensorNeuron
+//{
+//    const int FOODLAYER = 7;
+//    private const int id = 5;
+//    public FoodDistanceForwardSensor(GameObject parent) : base(parent)
+//    {
+//        animal = parent.GetComponent<Animal>();
+//        Id = id;
+//    }
+//    public override void SetSensorValue()
+//    {
+
+//        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
+//        float closest = 0;
+//        if (inRadiusFood.Length > 0)
+//        {
+//            var closestFood = GetClosestTile(inRadiusFood);
+//            brain.nearestFood = closestFood;
+//            var distanceVector = GetDistance(closestFood);
+//            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
+//            closest = Mathf.Cos(angle) * distanceVector.magnitude *1/animal.eyeSight;
+//        }
+
+//        //Debug.Log("Food: " + closest);
+//        SetOriginValue(closest);
+//    }
+//}
+
+//public class FoodDistanceSidesSensor : SensorNeuron
+//{
+//    const int FOODLAYER = 7;
+//    private const int id = 6;
+//    public FoodDistanceSidesSensor(GameObject parent) : base(parent)
+//    {
+//        animal = parent.GetComponent<Animal>();
+//        Id = id;
+//    }
+//    public override void SetSensorValue()
+//    {
+
+//        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
+//        float closest = 0;
+//        if (inRadiusFood.Length > 0)
+//        {
+//            var closestFood = GetClosestTile(inRadiusFood);
+//            brain.nearestFood = closestFood;
+//            var distanceVector = GetDistance(closestFood);
+//            var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
+//            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
+//        }
+//        //Debug.Log("Food: " + closest);
+//        SetOriginValue(closest);
+//    }
+//}

@@ -29,6 +29,7 @@ public class Brain
     private Vector3 nearestEnemy;
 
     private Engine engine;
+    public bool mutated = false;
 
     public Brain(GameObject parent)
     {
@@ -38,14 +39,11 @@ public class Brain
         {
             {1, new WaterLevelSensor(parent)},
             {2, new FoodLevelSensor(parent)},
-            {3, new WaterDistanceForwardSensor(parent)},
-            {4, new WaterDistanceSidesSensor(parent)},
-            {5, new FoodDistanceForwardSensor(parent)},
-            {6, new FoodDistanceSidesSensor(parent)},
-
-            {7, new TargetWater(parent)},
-            {8, new TargetFood(parent)},
-            {9, new RotateRandomAction(parent)},
+            {3, new WaterDistanceSensor(parent)},
+            {4, new FoodDistanceSensor(parent)},
+            {5, new TargetWater(parent)},
+            {6, new TargetFood(parent)},
+            {7, new RotateRandomAction(parent)},
             //{Ally distance
             //{Enemy distance
             //{7, new RotateSlightRightAction(parent)},
@@ -82,18 +80,21 @@ public class Brain
 
         //generate inner neurons
         int innerNeuronCount = -1;
-        for (int i = 0; i < numInternalNeurons; i++)
+        for (int j  = 0; j< engine.numberOfInnerLayers; j++)
         {
-            Neuron innerNeuron = new InnerNeuron(Parent, innerNeuronCount);
-            AllNeurons.Add(innerNeuron.Id, innerNeuron);
-            usedInternals.Add(innerNeuron.Id);
-            innerNeuronCount--;
-        }
+            for (int i = 0; i < numInternalNeurons; i++)
+            {
+                Neuron innerNeuron = new InnerNeuron(Parent, innerNeuronCount);
+                AllNeurons.Add(innerNeuron.Id, innerNeuron);
+                usedInternals.Add(innerNeuron.Id);
+                innerNeuronCount--;
+            }
 
+        }
         //store all used neurons
         foreach (var Id in usedSensors.Union(usedActors.Union(usedInternals)))
         {
-            Neurons.Add(Id,AllNeurons[Id]);
+            Neurons.Add(Id, AllNeurons[Id]);
         }
         foreach (var n in usedActors.Union(usedInternals))
         {
@@ -137,36 +138,29 @@ public class Brain
 
     public string CreateConnection(int sourceId, int destinationId, float weight)
     {
-        try
+        if (Neurons[destinationId] is ActionNeuron)
         {
-            if (Neurons[destinationId] is ActionNeuron)
-            {
-                ((ActionNeuron)Neurons[destinationId]).AddWeight(sourceId, weight);
-            }
-            else if (Neurons[destinationId] is InnerNeuron)
-            {
-                ((InnerNeuron)Neurons[destinationId]).AddWeight(sourceId, weight);
-            }
-            Neuron source;
-            Neurons.TryGetValue(sourceId, out source);
-            Neuron destination;
-            Neurons.TryGetValue(destinationId, out destination);
-
-            string sourceBin = GeneEncoding.IdToBinary(sourceId);
-            string destBin = GeneEncoding.IdToBinary(destinationId);
-            string sourceBit = source is SensorNeuron ? "1" : "0";
-            string destBit = destination is ActionNeuron ? "1" : "0";
-            string weightBin = GeneEncoding.FloatToBinary(weight);
-            string connection32Bit = sourceBit + sourceBin + destBit + destBin + weightBin;
-            var c = weightBin.Length;
-            var x = connection32Bit.Length;
-            string connectionHex = GeneEncoding.BinToHex(connection32Bit);
-            return connectionHex;
-        } catch(Exception e)
-        {
-            throw (e);            
+            ((ActionNeuron)Neurons[destinationId]).AddWeight(sourceId, weight);
         }
-        return null;
+        else if (Neurons[destinationId] is InnerNeuron)
+        {
+            ((InnerNeuron)Neurons[destinationId]).AddWeight(sourceId, weight);
+        }
+        Neuron source;
+        Neurons.TryGetValue(sourceId, out source);
+        Neuron destination;
+        Neurons.TryGetValue(destinationId, out destination);
+
+        string sourceBin = GeneEncoding.IdToBinary(sourceId);
+        string destBin = GeneEncoding.IdToBinary(destinationId);
+        string sourceBit = source is SensorNeuron ? "1" : "0";
+        string destBit = destination is ActionNeuron ? "1" : "0";
+        string weightBin = GeneEncoding.FloatToBinary(weight);
+        string connection32Bit = sourceBit + sourceBin + destBit + destBin + weightBin;
+        var c = weightBin.Length;
+        var x = connection32Bit.Length;
+        string connectionHex = GeneEncoding.BinToHex(connection32Bit);
+        return connectionHex;
 
     }
     public void RemoveConnection(int sourceId, int destinationId)
@@ -203,32 +197,26 @@ public class Brain
     }
     public bool AddNeuron(Neuron n)
     {
-        try
+        if (Neurons.ContainsKey(n.Id))
         {
-            if (Neurons.ContainsKey(n.Id))
-            {
-                Debug.Log("Brain alread contains neuron: " + n.Id);
-                return false;
-            }
+            Debug.Log("Brain alread contains neuron: " + n.Id);
+            return false;
+        }
 
-            if (n is (SensorNeuron))
-            {
-                Sensors.Append(n.Id);
-            }
-            else if (n is (InnerNeuron))
-            {
-                Inners.Append(n.Id);
-            }
-            else
-            {
-                Actors.Append(n.Id);
-            }
-            Neurons.Add(n.Id, n);
-        }
-        catch(Exception e)
+        if (n is (SensorNeuron))
         {
-            Debug.LogError(e);
+            Sensors.Append(n.Id);
         }
+        else if (n is (InnerNeuron))
+        {
+            Inners.Append(n.Id);
+        }
+        else
+        {
+            Actors.Append(n.Id);
+        }
+        Neurons.Add(n.Id, n);
+        
         return true;
         //TODO change all proper string connections
 
@@ -321,16 +309,10 @@ public class Brain
         {
             Neuron neuron = null;
             Type t = null;
-            try
-            {
-                neuron = (Neurons[Sensors[i]]);
-                t = neuron.GetType();
-                ((SensorNeuron)Neurons[Sensors[i]]).SetSensorValue();
-            }
-            catch (Exception e)
-            {
-                Debug.Log(e);
-            }
+
+            neuron = (Neurons[Sensors[i]]);
+            t = neuron.GetType();
+            ((SensorNeuron)Neurons[Sensors[i]]).SetSensorValue();
         }
     }
     /// <summary>

@@ -54,7 +54,7 @@ public class Body
         comp.GetComponent<Renderer>().material.color = primaryColor;
     }
 
-    private void SetColor(GameObject comp, Color color)
+    public void SetColor(GameObject comp, Color color)
     {
         comp.GetComponent<Renderer>().material.color = color;
     }

@@ -159,7 +159,7 @@ public class DoNothingAction : ActionNeuron
 }
 public class TargetFood : ActionNeuron
 {
-    private const int id = 7;
+    private  int id = lastInputNeuron + 1;
     private Vector3 foodPosition;
 
     public TargetFood(GameObject parent) : base(parent)
@@ -184,7 +184,7 @@ public class TargetFood : ActionNeuron
 
 public class TargetWater : ActionNeuron
 {
-    private const int id = 8;
+    private int id = (lastInputNeuron+2);
     private Vector3 waterPosition;
     public TargetWater(GameObject parent) : base(parent)
     {
@@ -206,7 +206,7 @@ public class TargetWater : ActionNeuron
 }
 public class RotateRandomAction : ActionNeuron
 {
-    private const int id = 9;
+    private  int id = lastInputNeuron + 3;
     public RotateRandomAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();

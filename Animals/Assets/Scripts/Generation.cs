@@ -5,6 +5,8 @@ using System.Linq;
 using System;
 using Random = UnityEngine.Random;
 using static System.Collections.Specialized.BitVector32;
+using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 
 public class Generation : MonoBehaviour
 {
@@ -12,7 +14,7 @@ public class Generation : MonoBehaviour
 
     
     public static int generation;
-
+    public static int highScore;
     public int deadline;
     public int mutationPercentage;
     private Engine engine;
@@ -46,6 +48,7 @@ public class Generation : MonoBehaviour
 
         if (Time.time > time + deadline || currentPopulationSize<=0)
         {
+            StartCoroutine(WaitForAllInactiveCoroutine(currentPopulation));
             //var t = AverageLifespan(currentPopulation);
             //Debug.Log("Action supposed: " + Engine.actionSupposed + " done: " + Engine.actionDone);
             //((int)((float)percentage / 100 * (float)engine.animalCount));
@@ -53,19 +56,32 @@ public class Generation : MonoBehaviour
             
             if (itteration == engine.samples)
             {
-                survivors.AddRange(SelectTop(engine.sampleSize, generationPopulation));
+                Clean(survivors, null);
+                survivors = new List<GameObject>();
+                var top = SelectTop(engine.selectionCount, generationPopulation);
+                survivors.AddRange(top); 
+                currentPopulation= new List<GameObject>();
+                Clean(generationPopulation, survivors);
+                generationPopulation = new List<GameObject>();
                 GenerateNewPopulation(survivors);
                 generation++;
+                var avg = AverageLifespan(survivors);
+
+                highScore = avg;
+                
                 Debug.Log("Generation: " + generation + " average lifespan: " + AverageLifespan(survivors));
+
                 //Debug.Log("EAT supposed: " + Engine.eatCountsupposed + " done: " + Engine.eatCountDone + " DRINK supposed: " + Engine.drinkCountsupposed + " done: " + Engine.drinkCountDone);
-                survivors = new List<GameObject>();
+                
                 originalPopulation = currentPopulation;
                 itteration = 0;
+                
             }
             else
             {
                 itteration++;
                 generationPopulation.AddRange(currentPopulation);
+
                 if (originalPopulation.Count() == 0)
                 {
                     GenerateFirstPopulation();
@@ -73,7 +89,8 @@ public class Generation : MonoBehaviour
                 }
                 else
                 {
-                    GenerateNewPopulation(originalPopulation);
+                    //original?
+                    GenerateNewPopulation(survivors);
                 }
 
             }
@@ -97,12 +114,22 @@ public class Generation : MonoBehaviour
     }
     private int AverageLifespan(List<GameObject> population)
     {
-        var total = 0;
-        foreach (var animal in population)
+        try
         {
-            total += animal.GetComponent<Animal>().age;
+            var total = 0;
+            foreach (var animal in population)
+            {
+                total += animal.GetComponent<Animal>().age;
+            }
+            return total / population.Count;
         }
-        return total / population.Count;
+        catch(Exception e)
+        {
+            Debug.Log(e.Message);
+            Application.Quit();
+            return 0;
+        }
+    
     }
 
     private List<GameObject> SelectTop(int number, List<GameObject> population)
@@ -120,9 +147,14 @@ public class Generation : MonoBehaviour
 
         System.Random rand = new System.Random();
         List<GameObject> newPopulation = new List<GameObject>();
-
+        int count = 0;
         while (newPopulation.Count < engine.sampleSize)
         {
+            if (count > 2000)
+            {
+                Application.Quit();
+                break;
+            }
             List<GameObject> survivorPool = new List<GameObject>(survivorObjs);
             if (survivorObjs.Count > 1)
             {
@@ -141,7 +173,7 @@ public class Generation : MonoBehaviour
                 newPopulation.Add(child);
                 rand = new System.Random();
             }
-
+            count++;
         }
         return newPopulation;
         
@@ -151,178 +183,187 @@ public class Generation : MonoBehaviour
     private GameObject CreateOffSprings(GameObject animal1, GameObject animal2)
     {
         Brain x;
-        try {
-            GameObject o = BreedBodies(animal1, animal2);
-            x = o.GetComponent<Animal>().brain;
-            Brain brains2 = animal2.GetComponent<Animal>().brain;
-            Brain brains1 = animal1.GetComponent<Animal>().brain;
-            o.GetComponent<Animal>().brain = Crossover(brains1, brains2);
-            o.GetComponent<Animal>().age = 0;
 
-            return o;
-        } catch (Exception e)
+        GameObject o = BreedBodies(animal1, animal2);
+        x = o.GetComponent<Animal>().brain;
+        Brain brains2 = animal2.GetComponent<Animal>().brain;
+        Brain brains1 = animal1.GetComponent<Animal>().brain;
+        o.GetComponent<Animal>().brain = Crossover(brains1, brains2);
+        if (o.GetComponent<Animal>().brain.mutated)
         {
-            throw (e);
+            o.GetComponent<Animal>().body.SetColor(o.GetComponent<Animal>().body.Torso, UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
+            o.GetComponent<Animal>().body.SetColor(o.GetComponent<Animal>().body.Head, UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
+            o.GetComponent<Animal>().brain.mutated = false;
         }
+        o.GetComponent<Animal>().age = 0;
+
+        return o;
+
     }
-    private Brain Crossover(Brain brains1, Brain brains2)
-    {
-        try
+        private Brain Crossover(Brain brains1, Brain brains2)
         {
-            System.Random rand = new System.Random();
+        System.Random rand = new System.Random();
 
-            var InnersActors = brains1.AllNeurons.Where(x => x.Value is Destination).ToList();
+        var InnersActors = brains1.AllNeurons.Where(x => x.Value is Destination).ToList();
 
-            foreach (var n in InnersActors)
+        foreach (var n in InnersActors)
+        {
+            //try mutation
+            var mutate = UnityEngine.Random.Range(0f, 100f);
+            if (mutate <= mutationPercentage)
             {
-                Destination n1 = null;
-                Destination n2 = null;
-                if (brains1.Neurons.ContainsKey(n.Key))
+                var newWeight = UnityEngine.Random.Range(-4f, 4f);
+                var destAsNeuron = (Neuron)n.Value;
+                ((Destination)destAsNeuron).SetBias(UnityEngine.Random.Range(-1f,1f));
+                Neuron t;
+                int index;
+                try
                 {
-                    try
+                    if (n.Value is ActionNeuron)
                     {
-                        Neuron t;
-                        brains1.Neurons.TryGetValue(n.Key, out t);
-                        n1 = (Destination)t;
+                        index = brains1.Inners[UnityEngine.Random.Range(0, brains1.Inners.Length - 1)];
+                        
+                        brains1.Neurons.TryGetValue(index, out t);
+                        brains1.CreateConnection(t.Id, destAsNeuron.Id, newWeight);
                     }
-                    catch(Exception e)
+                    else if (n.Value is InnerNeuron)
                     {
-                        throw (e);
-                    }   
-                    
-                }
-                if (brains2.Neurons.ContainsKey(n.Key))
-                {
-                    
-                    try
-                    {
-                        Neuron t;
-                        brains1.Neurons.TryGetValue(n.Key, out t);
-                        n2 = (Destination)t;
-                    }
-                    catch (Exception e)
-                    {
-                        throw (e);
+                        index = brains1.Sensors[UnityEngine.Random.Range(0, brains1.Sensors.Length - 1)];
+                        brains1.Neurons.TryGetValue(index, out t);
+                        brains1.CreateConnection(t.Id, destAsNeuron.Id, newWeight);
                     }
                 }
-                if (n1 == null && n2 == null)
+                catch (Exception e)
                 {
-                    continue;
+                    Debug.Log(e.Message);
+                    Application.Quit();
                 }
-                //TODO mutate
-                if (n1 != null && n2 != null)
+               
+                brains1.mutated = true;
+                continue;
+            }
+            Destination n1 = null;
+            Destination n2 = null;
+            if (brains1.Neurons.ContainsKey(n.Key))
+            {
+                Neuron t;
+                brains1.Neurons.TryGetValue(n.Key, out t);
+                n1 = (Destination)t;  
+            }
+            if (brains2.Neurons.ContainsKey(n.Key))
+            {
+                Neuron t;
+                brains1.Neurons.TryGetValue(n.Key, out t);
+                n2 = (Destination)t;
+                
+            }
+            if (n1 == null && n2 == null)
+            {
+                continue;
+            }
+            //TODO mutate
+            if (n1 != null && n2 != null)
+            {
+                //swap biases
+                if (rand.Next(2) == 0)
                 {
-                    //swap biases
+                    var b2 = n2.GetBias();
+                    n1.SetBias((n1.GetBias() + b2) / 2f);
+                }
+
+                var kv1 = n1.GetWeights();
+                var kv2 = n2.GetWeights();
+
+                var keys1 = kv1.Select(x => x.Item1).ToList();
+                var keys2 = kv2.Select(x => x.Item1).ToList();
+
+                //in 2 not in 1
+                var dif2from1 = keys1.Except(keys2).ToList();
+                //in 1 not in 2
+                var dif1from2 = keys2.Except(keys1).ToList();
+                //in both
+                var inBoth = keys1.Intersect(keys2).ToList();
+
+                var destAsNeuron = (Neuron)n1;
+
+                foreach (var key in dif2from1)
+                {
                     if (rand.Next(2) == 0)
                     {
-                        var b2 = n2.GetBias();
-                        n1.SetBias((n1.GetBias() + b2) / 2f);
-                    }
-
-                    var kv1 = n1.GetWeights();
-                    var kv2 = n2.GetWeights();
-
-                    var keys1 = kv1.Select(x => x.Item1).ToList();
-                    var keys2 = kv2.Select(x => x.Item1).ToList();
-
-                    //in 2 not in 1
-                    var dif2from1 = keys1.Except(keys2).ToList();
-                    //in 1 not in 2
-                    var dif1from2 = keys2.Except(keys1).ToList();
-                    //in both
-                    var inBoth = keys1.Intersect(keys2).ToList();
-
-                    var destAsNeuron = (Neuron)n1;
-
-                    foreach (var key in dif2from1)
-                    {
-                        if (rand.Next(2) == 0)
-                        {
-                            var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                            brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
-                        }
-                    }
-                    foreach (var key in dif1from2)
-                    {
-                        if (rand.Next(2) == 0)
-                        {
-                            brains1.RemoveConnection(key, destAsNeuron.Id);
-                        }
-                    }
-                    foreach (var key in inBoth)
-                    {
-                        if (rand.Next(2) == 0)
-                        {
-                            var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                            var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                            var newWeight = (w1 + w2) / 2f;
-                            brains1.RemoveConnection(key, destAsNeuron.Id);
-                            brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
-                        }
-                    }
-
-                }
-                else if (n1 != null && n2 == null)
-                {
-                    //maybe take other brain's neuron
-                    if (rand.Next(2) == 0)
-                    {
-                        brains1.AddNeuron((Neuron)n2);
+                        var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                        brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
                     }
                 }
-                else
+                foreach (var key in dif1from2)
                 {
-                    //maybe remove
                     if (rand.Next(2) == 0)
                     {
-                        Neuron destAsNeuron = (Neuron)n1;
-                        brains1.RemoveNeuron(destAsNeuron.Id);
+                        brains1.RemoveConnection(key, destAsNeuron.Id);
                     }
+                }
+                foreach (var key in inBoth)
+                {
+                    if (rand.Next(2) == 0)
+                    {
+                        var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                        var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                        var newWeight = (w1 + w2) / 2f;
+                        brains1.RemoveConnection(key, destAsNeuron.Id);
+                        brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
+                    }
+                }
+
+            }
+            else if (n1 != null && n2 == null)
+            {
+                //maybe take other brain's neuron
+                if (rand.Next(2) == 0)
+                {
+                    brains1.AddNeuron((Neuron)n2);
                 }
             }
+            else
+            {
+                //maybe remove
+                if (rand.Next(2) == 0)
+                {
+                    Neuron destAsNeuron = (Neuron)n1;
+                    brains1.RemoveNeuron(destAsNeuron.Id);
+                }
+            }
+        }
 
-            return brains1;
-        }
-        catch (Exception e)
-        {
-            throw (e);
-        }
+        return brains1;
     }
  
     private GameObject BreedBodies(GameObject animal1, GameObject animal2)
     {
-        try
-        {
-            Body body1 = animal1.GetComponent<Animal>().body;
-            Body body2 = animal2.GetComponent<Animal>().body;
-            Color primary1 = body1.primaryColor;
-            Color primary2 = body2.primaryColor;
-            Color secondary1 = body1.secondaryColor;
-            Color secondary2 = body2.secondaryColor;
-            float scale = Random.Range(0f, 1f);
-            //var newPrimary1 = (primary1 * scale + primary2 * (1 - scale)) / 2f;
-            //var newSecondary1 = (secondary1 * scale + secondary2 * (1 - scale)) / 2f;
-            var newPrimary1 = (primary1 + primary2) / 2f;
-            var newSecondary1 = (secondary1  + secondary2) / 2f;
-            string name = body1.skeleton.name.Split(' ')[0] + " " + body2.skeleton.name.Split(' ')[1];
-            GameObject skeleton = Instantiate(body1.skeleton);
-            GameObject newAnimal = CreateAnimal(
-                skeleton,
-                (body1.bodySize + body2.bodySize) / 2f,
-                (body1.eyeSize + body2.eyeSize) / 2f,
-                (body1.legSize + body2.legSize) / 2f,
-                newPrimary1,
-                newSecondary1,
-                name,
-                false
-            );
+
+        Body body1 = animal1.GetComponent<Animal>().body;
+        Body body2 = animal2.GetComponent<Animal>().body;
+        Color primary1 = body1.primaryColor;
+        Color primary2 = body2.primaryColor;
+        Color secondary1 = body1.secondaryColor;
+        Color secondary2 = body2.secondaryColor;
+        float scale = Random.Range(0f, 1f);
+        //var newPrimary1 = (primary1 * scale + primary2 * (1 - scale)) / 2f;
+        //var newSecondary1 = (secondary1 * scale + secondary2 * (1 - scale)) / 2f;
+        var newPrimary1 = new Color(Random.Range(primary1.r, primary2.r), Random.Range(primary1.g, primary2.g), Random.Range(primary1.b, primary2.b), Random.Range(primary1.a, primary2.a));
+        var newSecondary1 = new Color(Random.Range(secondary1.r, secondary2.r), Random.Range(secondary1.g, secondary2.g), Random.Range(secondary1.b, secondary2.b), Random.Range(secondary1.a, secondary2.a));
+        string name = body1.skeleton.name.Split(' ')[0] + " " + body2.skeleton.name.Split(' ')[1];
+        GameObject skeleton = Instantiate(body1.skeleton);
+        GameObject newAnimal = CreateAnimal(
+            skeleton,
+            (body1.bodySize + body2.bodySize) / 2f,
+            (body1.eyeSize + body2.eyeSize) / 2f,
+            (body1.legSize + body2.legSize) / 2f,
+            newPrimary1,
+            newSecondary1,
+            name,
+            false
+        );
             
-            return newAnimal;
-        }
-        catch (Exception e)
-        {
-            throw (e);
-        }
+        return newAnimal;
        
     }
 
@@ -331,6 +372,7 @@ public class Generation : MonoBehaviour
         //Clean();
 
         engine = GameObject.Find("Engine").GetComponent<Engine>();
+        currentPopulation = new List<GameObject>();
         //Clean();
         for (int i = 0; i < engine.sampleSize; i++)
         {
@@ -348,24 +390,21 @@ public class Generation : MonoBehaviour
         time = Time.time;
     }
 
-    public void Clean()
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public void Clean(List<GameObject> pop, List<GameObject> except)
     {
-        List<GameObject> previousPop = new List<GameObject>(currentPopulation);
-        currentPopulation = new List<GameObject>();
-        foreach (var previous in previousPop)
+        foreach (var previous in pop)
         {
-            try
-            {
-                if (!survivors.Contains(previous)) //!originalPopulation.Contains(previous) && 
+
+            if (except != null){
+                if (except.Contains(previous)) //!originalPopulation.Contains(previous) && 
                 {
-                    previous.SetActive(true);
-                    Destroy(previous);
+                    continue;
                 }
             }
-            catch (Exception e)
-            {
-                Debug.LogError(e.StackTrace);
-            }
+                
+            previous.SetActive(true);
+            Destroy(previous);
         }
     }
     public void ResetMap()
@@ -383,15 +422,18 @@ public class Generation : MonoBehaviour
     {
         //Clean();
         ResetMap();
-        //Clean();
-        List<GameObject> newPopulation = BreedAnimals(pop);
 
-        foreach(var animal in newPopulation)
+        currentPopulation = new List<GameObject>();
+        
+        List<GameObject> newPopulation = BreedAnimals(pop);
+        
+        foreach (var animal in newPopulation)
         {
             animal.SetActive(true);
             currentPopulation.Add(animal);
         }
         currentPopulationSize = currentPopulation.Count;
+        
         time = Time.time;
     }
 
@@ -412,6 +454,33 @@ public class Generation : MonoBehaviour
         var area = engine.grassAreas.ElementAt(rand);
         skeleton.transform.position = area.Tile.transform.position;
         return skeleton;
+    }
+    IEnumerator WaitForAllInactiveCoroutine(List<GameObject> elementsToCheck)
+    {
+        // Wait until all elements are inactive
+        while (!AreAllElementsInactive(elementsToCheck))
+        {
+            yield return null; // Wait for the next frame
+        }
+
+        // All elements are inactive, continue with your logic here
+        Debug.Log("All elements are inactive. Continuing...");
+
+        // Add your code to execute after all elements are inactive
+    }
+
+    bool AreAllElementsInactive(List<GameObject> elementsToCheck)
+    {
+        // Check if all elements are inactive
+        foreach (GameObject element in elementsToCheck)
+        {
+            if (element.activeSelf)
+            {
+                return false; // At least one element is still active
+            }
+        }
+
+        return true; // All elements are inactive
     }
 }
 

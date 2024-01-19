@@ -7,8 +7,8 @@ using UnityEngine;
 public abstract class Neuron
 {
     //when adding a new neuron, add the class, add it to the brain dict, change total num
-    public static readonly int totalNeuronsAvailable = 9;
-    public static readonly int lastInputNeuron = 6;
+    public static readonly int totalNeuronsAvailable = 7;
+    public static readonly int lastInputNeuron = 4;
     public Animal animal;
     public GameObject parent { get; set; }
     public int Id;

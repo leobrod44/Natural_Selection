@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [System.Serializable]
@@ -108,20 +109,16 @@ public class Animal: MonoBehaviour
     }
     void Update()
     {
-        try
-        {
-            Scan();
-            ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
-            if (neuronToFire != null) { 
-                neuronToFire.DoAction(); 
-                Engine.actionSupposed++;
-            }
-            CheckTile();
+
+        Scan();
+        ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
+        if (neuronToFire != null) { 
+            neuronToFire.DoAction(); 
+            Engine.actionSupposed++;
         }
-        catch (Exception e)
-        {
-            Debug.Log(e);
-        }
+        CheckTile();
+        
+
 
         decisionTimer = Time.time;
             
@@ -137,9 +134,9 @@ public class Animal: MonoBehaviour
             Kill();
         }
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     private void Kill()
     {
-        death = Time.time;
         gameObject.SetActive(false);
         Generation.currentPopulationSize--;
     }
@@ -160,15 +157,9 @@ public class Animal: MonoBehaviour
     {
         //TODO need to generate bounds  for map
         //Use Physics.OverlapSphere (someposition, someradius);
-        try
-        {
-            area = engine.sections[currentPosx, currentPosy];
-        }
-        catch
-        {
-            //Debug.Log(currentPosx);
-            //Debug.Log(currentPosy);
-        }
+
+        area = engine.sections[currentPosx, currentPosy];
+
         //refreshes tiles once moved
         if (area.Tile != currentArea.Tile)
         {
@@ -209,7 +200,6 @@ public class Animal: MonoBehaviour
         }
         catch
         {
-
             Kill();
         }
         //refreshes tiles once moved
