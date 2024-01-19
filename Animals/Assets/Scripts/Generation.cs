@@ -10,17 +10,22 @@ public class Generation : MonoBehaviour
 {
     // Start is called before the first frame update
 
-    public int selectionPercentage;
+    
+    public static int generation;
+
     public int deadline;
     public int mutationPercentage;
     private Engine engine;
     [SerializeField]
     public List<GameObject> currentPopulation;
+    public List<GameObject> originalPopulation;
+    public List<GameObject> generationPopulation;
+    public List<GameObject> survivors;
     public static int currentPopulationSize;
-    private List<GameObject> survivors;
     private float time;
     private bool timeLimitFlag=true;
     private bool survivorListSet;
+    private int itteration;
     // brain constructors to give neural net
     // brain function to breen characters
     // fitness
@@ -30,26 +35,48 @@ public class Generation : MonoBehaviour
     void Start()
     {
         engine = GameObject.Find("Engine").GetComponent<Engine>();
+        survivors = new List<GameObject>();
+        originalPopulation = new List<GameObject>();
+        generationPopulation = new List<GameObject>();
     }
 
     // Update is called once per frame
     void Update()
     {
+
         if (Time.time > time + deadline || currentPopulationSize<=0)
         {
-            try
+            //var t = AverageLifespan(currentPopulation);
+            //Debug.Log("Action supposed: " + Engine.actionSupposed + " done: " + Engine.actionDone);
+            //((int)((float)percentage / 100 * (float)engine.animalCount));
+            //TODO select top from all isntead of each batch
+            
+            if (itteration == engine.samples)
             {
-                //survivors = currentPopulation.Where(x => x.activeInHierarchy).ToList();
-                float t = Time.time - time;
-                GenerateNewPopulation(currentPopulation);
-                time = Time.time;
-                Debug.Log(" age: " + t);
+                survivors.AddRange(SelectTop(engine.sampleSize, generationPopulation));
+                GenerateNewPopulation(survivors);
+                generation++;
+                Debug.Log("Generation: " + generation + " average lifespan: " + AverageLifespan(survivors));
+                //Debug.Log("EAT supposed: " + Engine.eatCountsupposed + " done: " + Engine.eatCountDone + " DRINK supposed: " + Engine.drinkCountsupposed + " done: " + Engine.drinkCountDone);
+                survivors = new List<GameObject>();
+                originalPopulation = currentPopulation;
+                itteration = 0;
             }
-            catch (Exception e)
+            else
             {
-                Debug.Log(e);
+                itteration++;
+                generationPopulation.AddRange(currentPopulation);
+                if (originalPopulation.Count() == 0)
+                {
+                    GenerateFirstPopulation();
+                    ResetMap();
+                }
+                else
+                {
+                    GenerateNewPopulation(originalPopulation);
+                }
+
             }
-          
         }
        
         //TODO 
@@ -68,250 +95,278 @@ public class Generation : MonoBehaviour
         //add varying colors say fall, winter, spring 
 
     }
+    private int AverageLifespan(List<GameObject> population)
+    {
+        var total = 0;
+        foreach (var animal in population)
+        {
+            total += animal.GetComponent<Animal>().age;
+        }
+        return total / population.Count;
+    }
 
-    private List<GameObject> SelectTop(List<GameObject> population)
+    private List<GameObject> SelectTop(int number, List<GameObject> population)
     {
         //TODO change selection according to fitness
-        int numAnimals = ((int)((float)selectionPercentage / 100 * (float)engine.animalCount));
+        int numAnimals = number;
         //int maxNum = percentage <= population.Count ? percentage: population.Count ;
-        List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().age).ToList();
+        List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().age).Reverse().ToList();
+        List<int> ages = ageOrdered.Select(x => x.GetComponent<Animal>().age).ToList();
+        //Debug.Log("Selected average lifespan: " + (ages.Take(numAnimals).ToList().Sum() / ages.Take(numAnimals).ToList().Count));
         return ageOrdered.Take(numAnimals).ToList();
     }
-    //TODO how to breed? how to return, bred all genes between both? also fill rest of animals
-    //maybe while !full keep foreaching
     private List<GameObject> BreedAnimals(List<GameObject> survivorObjs)
     {
+
         System.Random rand = new System.Random();
         List<GameObject> newPopulation = new List<GameObject>();
 
-        while (newPopulation.Count < engine.animalCount)
+        while (newPopulation.Count < engine.sampleSize)
         {
             List<GameObject> survivorPool = new List<GameObject>(survivorObjs);
-            //if(newPopulation.Count+survivorObjs.Count > engine.animalCount)
-            //{
-            //    survivorObjs = survivorObjs.Take(engine.animalCount - newPopulation.Count).ToList();
-            //}
             if (survivorObjs.Count > 1)
             {
-                foreach (var survivor in survivorObjs)
-                {
-                    if (survivorPool.Count <= 1 || newPopulation.Count >= engine.animalCount)
-                        break;
-                    GameObject other = survivor;
-                    while (other == survivor)
-                        other = survivorPool[(rand.Next(survivorPool.Count()))];
-                    CreateOffSprings(survivor, other);
-                    newPopulation.Add(survivor);
-                    newPopulation.Add(other);
-                    rand = new System.Random();
-                }
+
             }
-            else
+            foreach (var survivor in survivorObjs)
             {
-                GameObject survivor = survivorObjs[0];
-                GameObject other = survivorObjs[0];
-                CreateOffSprings(survivor, other);
-                newPopulation.Add(survivor);
-                newPopulation.Add(other);
+                if (newPopulation.Count >= engine.sampleSize)
+                    break;
+
+                GameObject other = survivor;
+                while (other == survivor)
+                     other = survivorPool[(rand.Next(survivorPool.Count()))];
+
+                GameObject child = CreateOffSprings(survivor, other);
+                newPopulation.Add(child);
+                rand = new System.Random();
             }
-            
+
         }
         return newPopulation;
-    }
-    private void CreateOffSprings(GameObject animal1, GameObject animal2)
-    {
-        BreedBrain(animal1, animal2);
-        BreedBodies(animal1, animal2);
-    }
-    private Tuple<Brain,Brain> BreedBrain(GameObject animal1, GameObject animal2)
-    {
-        System.Random rand = new System.Random();
-
-        Brain brain1 = animal1.GetComponent<Animal>().brain;
-        Brain brain2 = animal2.GetComponent<Animal>().brain;
-
-        List<string> sensorConnections1 = brain1.SensorConnections;
-        List<string> sensorConnections2 = brain2.SensorConnections;
         
 
-        for (int i = 0; i < sensorConnections1.Count; i++)
+        
+    }
+    private GameObject CreateOffSprings(GameObject animal1, GameObject animal2)
+    {
+        Brain x;
+        try {
+            GameObject o = BreedBodies(animal1, animal2);
+            x = o.GetComponent<Animal>().brain;
+            Brain brains2 = animal2.GetComponent<Animal>().brain;
+            Brain brains1 = animal1.GetComponent<Animal>().brain;
+            o.GetComponent<Animal>().brain = Crossover(brains1, brains2);
+            o.GetComponent<Animal>().age = 0;
+
+            return o;
+        } catch (Exception e)
         {
-            int r = rand.Next(3);
-            if (r == 0)
+            throw (e);
+        }
+    }
+    private Brain Crossover(Brain brains1, Brain brains2)
+    {
+        try
+        {
+            System.Random rand = new System.Random();
+
+            var InnersActors = brains1.AllNeurons.Where(x => x.Value is Destination).ToList();
+
+            foreach (var n in InnersActors)
             {
-                string temp = sensorConnections1[i];
-                sensorConnections1[i] = sensorConnections2[i];
-                sensorConnections2[i] = temp;
+                Destination n1 = null;
+                Destination n2 = null;
+                if (brains1.Neurons.ContainsKey(n.Key))
+                {
+                    try
+                    {
+                        Neuron t;
+                        brains1.Neurons.TryGetValue(n.Key, out t);
+                        n1 = (Destination)t;
+                    }
+                    catch(Exception e)
+                    {
+                        throw (e);
+                    }   
+                    
+                }
+                if (brains2.Neurons.ContainsKey(n.Key))
+                {
+                    
+                    try
+                    {
+                        Neuron t;
+                        brains1.Neurons.TryGetValue(n.Key, out t);
+                        n2 = (Destination)t;
+                    }
+                    catch (Exception e)
+                    {
+                        throw (e);
+                    }
+                }
+                if (n1 == null && n2 == null)
+                {
+                    continue;
+                }
+                //TODO mutate
+                if (n1 != null && n2 != null)
+                {
+                    //swap biases
+                    if (rand.Next(2) == 0)
+                    {
+                        var b2 = n2.GetBias();
+                        n1.SetBias((n1.GetBias() + b2) / 2f);
+                    }
+
+                    var kv1 = n1.GetWeights();
+                    var kv2 = n2.GetWeights();
+
+                    var keys1 = kv1.Select(x => x.Item1).ToList();
+                    var keys2 = kv2.Select(x => x.Item1).ToList();
+
+                    //in 2 not in 1
+                    var dif2from1 = keys1.Except(keys2).ToList();
+                    //in 1 not in 2
+                    var dif1from2 = keys2.Except(keys1).ToList();
+                    //in both
+                    var inBoth = keys1.Intersect(keys2).ToList();
+
+                    var destAsNeuron = (Neuron)n1;
+
+                    foreach (var key in dif2from1)
+                    {
+                        if (rand.Next(2) == 0)
+                        {
+                            var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                            brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
+                        }
+                    }
+                    foreach (var key in dif1from2)
+                    {
+                        if (rand.Next(2) == 0)
+                        {
+                            brains1.RemoveConnection(key, destAsNeuron.Id);
+                        }
+                    }
+                    foreach (var key in inBoth)
+                    {
+                        if (rand.Next(2) == 0)
+                        {
+                            var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                            var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+                            var newWeight = (w1 + w2) / 2f;
+                            brains1.RemoveConnection(key, destAsNeuron.Id);
+                            brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
+                        }
+                    }
+
+                }
+                else if (n1 != null && n2 == null)
+                {
+                    //maybe take other brain's neuron
+                    if (rand.Next(2) == 0)
+                    {
+                        brains1.AddNeuron((Neuron)n2);
+                    }
+                }
+                else
+                {
+                    //maybe remove
+                    if (rand.Next(2) == 0)
+                    {
+                        Neuron destAsNeuron = (Neuron)n1;
+                        brains1.RemoveNeuron(destAsNeuron.Id);
+                    }
+                }
             }
-            else if (r == 1)
-            {
-                var meanedWeights = MeanWeights(sensorConnections1[i], sensorConnections2[i]);
-                sensorConnections1[i] = meanedWeights.Item1;
-                sensorConnections2[i] = meanedWeights.Item2;
-            }
+
+            return brains1;
         }
-
-        List<string> innerConnections1 = brain1.InnerConnections;
-        List<string> innerConnections2 = brain2.InnerConnections;
-
-        for (int i = 0; i < innerConnections1.Count; i++)
+        catch (Exception e)
         {
-            int r = rand.Next(3);
-            if (r == 0)
-            {
-                string temp = innerConnections1[i];
-                innerConnections1[i] = innerConnections2[i];
-                innerConnections2[i] = temp;
-            }
-            else if (r == 1)
-            {
-
-            }
+            throw (e);
         }
-
-        return new Tuple<Brain, Brain>(brain1, brain2);
     }
-    private Tuple<Brain, Brain> BreedBrainDep(GameObject animal1, GameObject animal2)
+ 
+    private GameObject BreedBodies(GameObject animal1, GameObject animal2)
     {
-        Brain brain1 = animal1.GetComponent<Animal>().brain;
-        Brain brain2 = animal2.GetComponent<Animal>().brain;
-        List<string> sensorConnections1 = brain1.SensorConnections;
-        List<string> sensorConnections2 = brain2.SensorConnections;
-        List<string> innerConnections1 = brain1.InnerConnections;
-        List<string> innerConnections2 = brain2.InnerConnections;
-
-        var bredSensorSections = BreedSections(sensorConnections1, sensorConnections2);
-        brain1.SensorConnections = bredSensorSections.Item1;
-        brain2.SensorConnections = bredSensorSections.Item2;
-
-        var bredInnerSections = BreedSections(innerConnections1, innerConnections2);
-        brain1.InnerConnections = bredInnerSections.Item1;
-        brain2.InnerConnections = bredInnerSections.Item2;
-
-
-        return new Tuple<Brain, Brain>(brain1, brain2);
-    }
-
-    private void BreedBodies(GameObject animal1, GameObject animal2)
-    {
-        Body body1 = animal1.GetComponent<Animal>().body;
-        Body body2 = animal2.GetComponent<Animal>().body;
-        Color primary1 = body1.primaryColor;
-        Color primary2 = body2.primaryColor;
-        Color secondary1 = body1.secondaryColor;
-        Color secondary2 = body2.secondaryColor;
-        float scale = Random.Range(0f, 1f);
-        var newPrimary1 = (primary1 * scale + primary2 *(1-scale)) /2f;
-        var newSecondary1 = (secondary1 * scale + secondary2 * (1 - scale)) / 2f;
-        scale = Random.Range(0f, 1f);
-        var newPrimary2 = (primary1 * scale + primary2 * (1 - scale)) / 2f;
-        var newSecondary2 = (secondary1 * scale + secondary2 * (1 - scale)) / 2f;
-        body1.primaryColor = newPrimary1;
-        body1.secondaryColor = newSecondary1;
-        body2.primaryColor = newPrimary2;
-        body2.secondaryColor = newSecondary2;
-        animal1.name = GeneEncoding.GenerateLatinName();
-
-        //TODO breed size;
-    }
-
-    private Tuple<List<string>,List<string>> BreedSections(List<string> section1, List<string> section2)
-    {
-        var length = Math.Max(section1.Count, section2.Count);
-        List<string> newConnections1 = new List<string>();
-        List<string> newConnections2 = new List<string>();
-        for (int i = 0; i < length; i++)
+        try
         {
-            var bredGenes = BreedGenes(section1[i], section2[i]);
-            newConnections1.Add(bredGenes.Item1);
-            newConnections2.Add(bredGenes.Item2);
+            Body body1 = animal1.GetComponent<Animal>().body;
+            Body body2 = animal2.GetComponent<Animal>().body;
+            Color primary1 = body1.primaryColor;
+            Color primary2 = body2.primaryColor;
+            Color secondary1 = body1.secondaryColor;
+            Color secondary2 = body2.secondaryColor;
+            float scale = Random.Range(0f, 1f);
+            //var newPrimary1 = (primary1 * scale + primary2 * (1 - scale)) / 2f;
+            //var newSecondary1 = (secondary1 * scale + secondary2 * (1 - scale)) / 2f;
+            var newPrimary1 = (primary1 + primary2) / 2f;
+            var newSecondary1 = (secondary1  + secondary2) / 2f;
+            string name = body1.skeleton.name.Split(' ')[0] + " " + body2.skeleton.name.Split(' ')[1];
+            GameObject skeleton = Instantiate(body1.skeleton);
+            GameObject newAnimal = CreateAnimal(
+                skeleton,
+                (body1.bodySize + body2.bodySize) / 2f,
+                (body1.eyeSize + body2.eyeSize) / 2f,
+                (body1.legSize + body2.legSize) / 2f,
+                newPrimary1,
+                newSecondary1,
+                name,
+                false
+            );
+            
+            return newAnimal;
         }
-        return new Tuple<List<string>, List<string>>(newConnections1, newConnections2);
-    }
-    private Tuple<string,string> BreedGenes(string connection1, string connection2)
-    {
-        System.Random rand = new System.Random();
-
-        string binary1 = GeneEncoding.HexToBin(connection1);
-        string binary2 = GeneEncoding.HexToBin(connection2);
-
-        var val = rand.Next(0, 3);
-        if (val == 0)
+        catch (Exception e)
         {
-            var temp = binary1.Substring(0, 8);
-            var temp2 = binary2.Substring(0, 8);
-            binary1 = temp2 + binary1.Substring(8, binary1.Length-8);
-            binary2 = temp + binary2.Substring(8, binary2.Length-8);
+            throw (e);
         }
-
-        rand = new System.Random();
-        val = rand.Next(0, 3);
-        if (val == 0)
-        {
-            var temp = binary1.Substring(8, 8);
-            var temp2 = binary2.Substring(8, 8);
-            var x = binary1.Length;
-            binary1 = binary1.Substring(0, 8) + temp2 + binary1.Substring(16, 16);
-            binary2 = binary2.Substring(0, 8) + temp + binary2.Substring(16, 16);
-        }
-
-        rand = new System.Random();
-        val = rand.Next(0, 3);
-        if (val == 0)
-        {
-            var x = binary1.Length;
-            float val1 = GeneEncoding.BinaryToWeight(binary1.Substring(16, 16));
-            float val2 = GeneEncoding.BinaryToWeight(binary2.Substring(16, 16));
-            float mean = (val1 + val2) / 2f;
-            binary1 = binary1.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
-            binary2 = binary2.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
-        }
-        //1/3 chance of swapping source, destination, meaning weight
-
-        return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
+       
     }
-    private Tuple<string, string> MeanWeights(string connection1, string connection2)
-    {
-        string binary1 = GeneEncoding.HexToBin(connection1);
-        string binary2 = GeneEncoding.HexToBin(connection2);
-        var x = binary1.Length;
 
-        float val1 = GeneEncoding.BinaryToWeight(binary1.Substring(16, 16));
-        float val2 = GeneEncoding.BinaryToWeight(binary2.Substring(16, 16));
-
-        float mean = (val1 + val2) / 2f;
-
-        binary1 = binary1.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
-
-        binary2 = binary2.Substring(0, 17) + GeneEncoding.WeightToBinary(mean);
-
-        return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
-
-    }
-    public void GenerateInitialPopulation()
+    public void GenerateFirstPopulation()
     {
         //Clean();
+
         engine = GameObject.Find("Engine").GetComponent<Engine>();
-        currentPopulation = new List<GameObject>();
-        for (int i = 0; i < engine.animalCount; i++)
+        //Clean();
+        for (int i = 0; i < engine.sampleSize; i++)
         {
             var bodySize = Random.Range(0.2f, 1);
             var eyeSize = Random.Range(0.1f, 0.5f);
-            var legSize = Random.Range(0.2f, 0.8f);
+            var legSize = Random.Range(0.2f, 0.8f) ;
             var primaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
             var secondaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-            var newAnimal = CreateAnimal(bodySize, eyeSize, legSize, primaryColor, secondaryColor);
+            var newAnimal = CreateAnimal(engine.availableSkeletons[0], bodySize, eyeSize, legSize, primaryColor, secondaryColor, GeneEncoding.GenerateLatinName(),true);
+            
             currentPopulation.Add(newAnimal);
         }
         currentPopulationSize = currentPopulation.Count;
+
+        time = Time.time;
     }
+
     public void Clean()
     {
-        foreach (var animal in currentPopulation)
+        List<GameObject> previousPop = new List<GameObject>(currentPopulation);
+        currentPopulation = new List<GameObject>();
+        foreach (var previous in previousPop)
         {
-            Destroy(animal);
+            try
+            {
+                if (!survivors.Contains(previous)) //!originalPopulation.Contains(previous) && 
+                {
+                    previous.SetActive(true);
+                    Destroy(previous);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e.StackTrace);
+            }
         }
-       // currentPopulation.Clear();
     }
     public void ResetMap()
     {
@@ -320,7 +375,7 @@ public class Generation : MonoBehaviour
             area.Element.SetActive(true);
             area.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.green;
         }
-        Clean();
+        //Clean();
         
     }
 
@@ -328,55 +383,142 @@ public class Generation : MonoBehaviour
     {
         //Clean();
         ResetMap();
-        List<GameObject> topSurvivors = SelectTop(pop);
-        List<GameObject> newPopulation = BreedAnimals(topSurvivors);
-        
-        List<GameObject> previousPop = new List<GameObject>(currentPopulation);
-        currentPopulation = new List<GameObject>();
-        foreach (var animal in newPopulation)
+        //Clean();
+        List<GameObject> newPopulation = BreedAnimals(pop);
+
+        foreach(var animal in newPopulation)
         {
-            var b = animal.GetComponent<Animal>().body;
-        }
-        foreach (var previous in previousPop)
-        {
-            previous.SetActive(true);
-            Destroy(previous);
-        }
-        foreach (var animal in newPopulation)
-        {
-            var b = animal.GetComponent<Animal>().body;
-            CreateAnimal(animal);
+            animal.SetActive(true);
+            currentPopulation.Add(animal);
         }
         currentPopulationSize = currentPopulation.Count;
         time = Time.time;
-        survivorListSet = false;
     }
 
-    public GameObject CreateAnimal(float bodySize, float eyeSize, float legSize, Color primary, Color secondary)
+
+    public GameObject CreateAnimal(GameObject skeleton, float bodySize, float eyeSize, float legSize, Color primary, Color secondary, string name, bool display)
     {
-        var x = Random.Range(0, Engine.MAPSIZE - 1);
-        var y = Random.Range(0, Engine.MAPSIZE - 1);
-        GameObject newAnimal = Instantiate(engine.availableSkeletons[0]);
-        newAnimal.transform.position = new Vector3(x, 0.9f, y);
-        Body newAnimalBody = new Body(newAnimal, bodySize, eyeSize, legSize, primary, secondary);
+        GameObject bodySkeleton = Instantiate(skeleton);
+        Body newAnimalBody = new Body(bodySkeleton, bodySize, eyeSize, legSize, primary, secondary,name);
+        GameObject newAnimal = SpawnAnimal(bodySkeleton);
         newAnimal.GetComponent<Animal>().body = newAnimalBody;
+        if (display)
+            bodySkeleton.GetComponent<Animal>().body.DisplayName(bodySkeleton);
         return newAnimal;
     }
-    public void CreateAnimal(GameObject animal)
+    public GameObject SpawnAnimal(GameObject skeleton)
     {
-
-        GameObject newAnimal = Instantiate(animal);
-        var x = Random.Range(0, Engine.MAPSIZE - 1);
-        var y = Random.Range(0, Engine.MAPSIZE - 1);
-        newAnimal.transform.position = new Vector3(x, 0.5f, y);
-        var angle = UnityEngine.Random.Range(0, 360f);
-        var dir = new Vector3(Mathf.Sin(Mathf.Deg2Rad * angle), 0, Mathf.Cos(Mathf.Deg2Rad * angle));
-        transform.rotation = new Quaternion(dir.x, dir.y, dir.z, 180f);
-        newAnimal.name = newAnimal.name.Replace("(Clone)", "");
-        currentPopulation.Add(newAnimal);
-        newAnimal.GetComponent<Animal>().enabled = true;
-        newAnimal.GetComponent<Animal>().body = animal.GetComponent<Animal>().body;
-        var b=  newAnimal.GetComponent<Animal>().body;
-
+        var rand = (int)Random.Range(0, engine.grassAreas.Count);
+        var area = engine.grassAreas.ElementAt(rand);
+        skeleton.transform.position = area.Tile.transform.position;
+        return skeleton;
     }
 }
+
+//private Tuple<Brain, Brain> BreedBrainDep(GameObject animal1, GameObject animal2)
+//{
+//    Brain brain1 = animal1.GetComponent<Animal>().brain;
+//    Brain brain2 = animal2.GetComponent<Animal>().brain;
+//    List<string> sensorConnections1 = brain1.SensorConnections;
+//    List<string> sensorConnections2 = brain2.SensorConnections;
+//    List<string> innerConnections1 = brain1.InnerConnections;
+//    List<string> innerConnections2 = brain2.InnerConnections;
+
+//    var bredSensorSections = BreedSections(sensorConnections1, sensorConnections2);
+//    brain1.SensorConnections = bredSensorSections.Item1;
+//    brain2.SensorConnections = bredSensorSections.Item2;
+
+//    var bredInnerSections = BreedSections(innerConnections1, innerConnections2);
+//    brain1.InnerConnections = bredInnerSections.Item1;
+//    brain2.InnerConnections = bredInnerSections.Item2;
+
+
+//    return new Tuple<Brain, Brain>(brain1, brain2);
+//}
+
+
+//private Tuple<List<string>,List<string>> BreedSections(List<string> section1, List<string> section2)
+//{
+//    var length = Math.Max(section1.Count, section2.Count);
+//    List<string> newConnections1 = new List<string>();
+//    List<string> newConnections2 = new List<string>();
+//    for (int i = 0; i < length; i++)
+//    {
+//        var bredGenes = BreedGenes(section1[i], section2[i]);
+//        newConnections1.Add(bredGenes.Item1);
+//        newConnections2.Add(bredGenes.Item2);
+//    }
+//    return new Tuple<List<string>, List<string>>(newConnections1, newConnections2);
+//}
+//private Tuple<string,string> BreedGenes(string connection1, string connection2)
+//{
+//    System.Random rand = new System.Random();
+
+//    string binary1 = GeneEncoding.HexToBin(connection1);
+//    string binary2 = GeneEncoding.HexToBin(connection2);
+
+//    var val = rand.Next(0, 3);
+//    if (val == 0)
+//    {
+//        var temp = binary1.Substring(0, 8);
+//        var temp2 = binary2.Substring(0, 8);
+//        binary1 = temp2 + binary1.Substring(8, binary1.Length-8);
+//        binary2 = temp + binary2.Substring(8, binary2.Length-8);
+//    }
+
+//    rand = new System.Random();
+//    val = rand.Next(0, 3);
+//    if (val == 0)
+//    {
+//        var temp = binary1.Substring(8, 8);
+//        var temp2 = binary2.Substring(8, 8);
+//        var x = binary1.Length;
+//        binary1 = binary1.Substring(0, 8) + temp2 + binary1.Substring(16, 16);
+//        binary2 = binary2.Substring(0, 8) + temp + binary2.Substring(16, 16);
+//    }
+
+//    rand = new System.Random();
+//    val = rand.Next(0, 3);
+//    if (val == 0)
+//    {
+//        var x = binary1.Length;
+//        float val1 = GeneEncoding.BinaryToFloat(binary1.Substring(16, 16));
+//        float val2 = GeneEncoding.BinaryToFloat(binary2.Substring(16, 16));
+//        float mean = (val1 + val2) / 2f;
+
+//        binary1 = binary1.Substring(0, 17) + GeneEncoding.FloatToBinary(mean);
+//        binary2 = binary2.Substring(0, 17) + GeneEncoding.FloatToBinary(mean);
+//    }
+//    //1/3 chance of swapping source, destination, meaning weight
+
+//    return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
+//}
+
+//private Tuple<string, string> Mutate(string connection1, string connection2)
+//{
+//    string binary1 = GeneEncoding.HexToBin(connection1);
+//    string binary2 = GeneEncoding.HexToBin(connection2);
+//    var x = binary1.Length;
+//    var r = new System.Random();
+
+//    binary1 = binary1.Substring(0, 17) + GeneEncoding.FloatToBinary(UnityEngine.Random.Range(-4f, 4f));
+//    binary2 = binary2.Substring(0, 17) + GeneEncoding.FloatToBinary(UnityEngine.Random.Range(-4f, 4f));
+//    return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
+//}
+//private Tuple<string, string> MeanWeights(string connection1, string connection2)
+//{
+//    string binary1 = GeneEncoding.HexToBin(connection1);
+//    string binary2 = GeneEncoding.HexToBin(connection2);
+//    var x = binary1.Length;
+
+//    float val1 = GeneEncoding.BinaryToFloat(binary1.Substring(16, 16));
+//    float val2 = GeneEncoding.BinaryToFloat(binary2.Substring(16, 16));
+
+//    float mean = (val1 + val2) / 2f;
+//    binary1 = binary1.Substring(0, 17) + GeneEncoding.FloatToBinary(mean);
+
+//    binary2 = binary2.Substring(0, 17) + GeneEncoding.FloatToBinary(mean);
+
+//    return new Tuple<string, string>(GeneEncoding.BinToHex(binary1), GeneEncoding.BinToHex(binary2));
+
+//}

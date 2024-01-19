@@ -39,9 +39,11 @@ public class Area
     private void CreateTile(int i, int j)
     {
         Tile = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        Tile.GetComponent<Collider>().enabled = false;
         Tile.transform.localScale = new Vector3(0.1f, 1, 0.1f);
         Tile.transform.parent = Ground.transform;
         Tile.transform.position = new Vector3(i, 0, j);
+        Tile.transform.position = new Vector3((int)Tile.transform.position.x, 0, (int)Tile.transform.position.z);
     }
 }
 

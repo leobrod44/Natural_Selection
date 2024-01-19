@@ -9,12 +9,38 @@ public abstract class ActionNeuron: Neuron, Destination
     private List<Tuple<int, float>> m_weights;
 
     private float result;
+
+    private float bias;
     public ActionNeuron(GameObject parent)
     {
         this.parent = parent;
         m_weights = new List<Tuple<int, float>>();
     }
     public abstract void DoAction();
+    public void ChangeWeight(int sourceId, float val)
+    {
+        foreach (var weight in m_weights)
+        {
+            if (weight.Item1 == sourceId)
+            {
+                m_weights.Remove(weight);
+                m_weights.Add(new Tuple<int, float>(sourceId, val));
+                break;
+            }
+        }
+    }
+    public void RemoveWeight(int sourceId)
+    {
+        foreach (var weight in m_weights)
+        {
+            if (weight.Item1 == sourceId)
+            {
+                m_weights.Remove(weight);
+                break;
+            }
+        }
+
+    }
     public List<Tuple<int, float>> GetWeights()
     {
         return m_weights;
@@ -22,6 +48,14 @@ public abstract class ActionNeuron: Neuron, Destination
     public void AddWeight(int sourceId, float val)
     {
         m_weights.Add(new Tuple<int, float>(sourceId, val));
+    }
+    public void SetBias(float val)
+    {
+        bias = val;
+    }   
+    public float GetBias()
+    {
+        return bias;
     }
     public float GetActivatedValue()
     {
@@ -108,21 +142,6 @@ public class TurnAroundAction : ActionNeuron
     }
 }
 
-public class RotateRandomAction : ActionNeuron
-{
-    private const int id = 9;
-    public RotateRandomAction(GameObject parent) : base(parent)
-    {
-        animal = parent.GetComponent<Animal>();
-        Id = id;
-    }
-
-    public override void DoAction()
-    {
-        var rand = UnityEngine.Random.Range(0, 360);
-        parent.transform.Rotate(0, rand, 0);
-    }
-}
 
 public class DoNothingAction : ActionNeuron
 {
@@ -156,6 +175,10 @@ public class TargetFood : ActionNeuron
         Vector3 foodDirection = foodPosition - parent.transform.position;
         Quaternion foodRotation = Quaternion.LookRotation(foodDirection);
         parent.transform.rotation = foodRotation;
+        if (brain.nearestFood != Vector3.zero)
+            this.parent.transform.position = brain.nearestFood;
+        Engine.eatCountsupposed++;
+
     }
 }
 
@@ -171,17 +194,37 @@ public class TargetWater : ActionNeuron
     }
     public override void DoAction()
     {
+      
         this.waterPosition = brain.nearestWater;
         Vector3 waterDirection = waterPosition - parent.transform.position;
         Quaternion waterRotation = Quaternion.LookRotation(waterDirection);
         parent.transform.rotation = waterRotation;
+        if (brain.nearestWater != Vector3.zero)
+            this.parent.transform.position = brain.nearestWater;
+        Engine.drinkCountsupposed++;
     }
-    
-
 }
+public class RotateRandomAction : ActionNeuron
+{
+    private const int id = 9;
+    public RotateRandomAction(GameObject parent) : base(parent)
+    {
+        animal = parent.GetComponent<Animal>();
+        Id = id;
+    }
+
+    public override void DoAction()
+    {
+        var randX = UnityEngine.Random.Range(-1, 2);
+        var randY = UnityEngine.Random.Range(-1, 2);
+        Vector3 pos = parent.transform.position;
+        parent.transform.position = new Vector3(pos.x + randX, 0, pos.z + randY);
+    }
+}
+
 //public class Breed : ActionNeuron
 //{
-    
+
 //}
 //public class Kill : ActionNeuron
 //{

@@ -39,7 +39,7 @@ public class Animal: MonoBehaviour
     private bool outOfBounds;
     private float birth;
     private float death;
-    public float age;
+    public int age;
     private Engine engine;
     public Body body;
     private List<Interests> interests;
@@ -80,7 +80,7 @@ public class Animal: MonoBehaviour
         eating = false;
         drinking = false;
         engine = GameObject.Find("Engine").GetComponent<Engine>();
-        PerformAction = DefaultMovement;
+        //PerformAction = DefaultMovement;
         canMove = true;
         try
         {
@@ -91,8 +91,6 @@ public class Animal: MonoBehaviour
         {
             Kill();
         }
-     
-        
         currentFood = maxFood;
         currentWater = maxWater;
         outOfBounds = false;
@@ -106,32 +104,27 @@ public class Animal: MonoBehaviour
     {
         transform.localEulerAngles = new Vector3(0, transform.localEulerAngles.y, 0);
         gameObject.transform.Find("Name tag").transform.rotation = Camera.main.transform.rotation;
-        gameObject.transform.position = new Vector3(gameObject.transform.position.x, 0.9f, gameObject.transform.position.z);
+        gameObject.transform.position = new Vector3(gameObject.transform.position.x, 1.7f, gameObject.transform.position.z);
     }
     void Update()
     {
-        //verify sensors, 
-        if (canMove)
+        try
         {
-            transform.position += transform.forward * speed * Time.deltaTime;
-            CheckTile();
             Scan();
-
-            if (Time.time > decisionTimer + engine.animalDecisionRate && !outOfBounds)
-            {
-                try
-                {
-                    ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
-                    neuronToFire.DoAction();
-                }
-                catch
-                {
-                    Debug.Log("brain does not have any action connections, wait for it to die out");
-                }
-
-                decisionTimer = Time.time;
+            ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
+            if (neuronToFire != null) { 
+                neuronToFire.DoAction(); 
+                Engine.actionSupposed++;
             }
+            CheckTile();
         }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+        }
+
+        decisionTimer = Time.time;
+            
         Tick();
         CheckDeath();
 
@@ -148,7 +141,6 @@ public class Animal: MonoBehaviour
     {
         death = Time.time;
         gameObject.SetActive(false);
-        age = death - birth;
         Generation.currentPopulationSize--;
     }
 
@@ -198,52 +190,58 @@ public class Animal: MonoBehaviour
                 currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
                 area = engine.sections[currentPosx, currentPosy];
             }
+            if (area.Tile != currentArea.Tile)
+            {
+                currentArea.currentAnimals.Remove(gameObject);
+                currentArea = area;
+                currentArea.currentAnimals.Add(gameObject);
+                //currentArea.Tile.GetComponent<Renderer>().material.color = Color.magenta; // Set element color to white
+            }
+            if (currentArea.Type == AreaType.Food)
+            {
+                Eat();
+            }
+            else if (currentArea.Type == AreaType.Water)
+            {
+                Drink();
+            }
+            Engine.actionDone++;
         }
         catch
         {
+
             Kill();
         }
         //refreshes tiles once moved
-        if (area.Tile != currentArea.Tile)
-        {
-            currentArea.currentAnimals.Remove(gameObject);
-            currentArea = area;
-            currentArea.currentAnimals.Add(gameObject);
-        }
-        if (currentArea.Type == AreaType.Food)
-        {
-            Eat();
-        }
-        else if(currentArea.Type == AreaType.Water)
-        {
-            Drink();
-        }
-        if (transform.position.x > Engine.MAPSIZE
-                    || transform.position.x < 0
-                    || transform.position.y > Engine.MAPSIZE
-                    || transform.position.y < 0)
-        {
-            if (!outOfBounds)
-            {
-                ActionNeuron tempTurnAroundNeuron = new TurnAroundAction(gameObject);
-                tempTurnAroundNeuron.DoAction();
-                outOfBounds = true;
-            }
-        }
-        else
-        {
-            if (outOfBounds)
-                outOfBounds = false;
-        }
+       
+        //if (transform.position.x > Engine.MAPSIZE
+        //            || transform.position.x < 0
+        //            || transform.position.y > Engine.MAPSIZE
+        //            || transform.position.y < 0)
+        //{
+        //    if (!outOfBounds)
+        //    {
+        //        ActionNeuron tempTurnAroundNeuron = new TurnAroundAction(gameObject);
+        //        tempTurnAroundNeuron.DoAction();
+        //        outOfBounds = true;
+        //    }
+        //}
+        //else
+        //{
+        //    if (outOfBounds)
+        //        outOfBounds = false;
+        //}
     }
     private void Eat()
     {
-        if (!eating && currentArea.Element.activeInHierarchy)
+        if (currentArea.Element.activeInHierarchy)
         {
             currentFood = maxFood;
             currentArea.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.red; // Set element color to white
             currentArea.Element.SetActive(false);
-            currentArea.Type = AreaType.Grass;
+            Engine.eatCountDone++;
+            
+            //currentArea.Type = AreaType.Grass;
             //StartCoroutine(Eating(2));
             //StartCoroutine(StopInPlace(2));
         }
@@ -253,6 +251,7 @@ public class Animal: MonoBehaviour
     private void Drink()
     {
         currentWater = maxWater;
+        Engine.drinkCountDone++;
         //StartCoroutine(StopInPlace(engine.drinkTime));
         //StartCoroutine(ResetWater(5));
     }
@@ -262,6 +261,7 @@ public class Animal: MonoBehaviour
         currentArea.Type = AreaType.Grass;
         yield return new WaitForSeconds(seconds);
         currentArea.Type = AreaType.Water;
+
     }
 
     private IEnumerator Eating(float seconds) 
@@ -287,8 +287,9 @@ public class Animal: MonoBehaviour
 
     private void Tick()
     {
-        currentWater -= Time.deltaTime * engine.waterDepletionConstant;
-        currentFood -= Time.deltaTime * engine.foodDepletionConstant;
+        currentWater -= engine.waterDepletionConstant;
+        currentFood -= engine.foodDepletionConstant;
+        age += 1;
     }
 
     // input of 0 to 1 -> connection weight -4.0f to 4.0f, neutral neuron tanh(sum(inputs)) -1 to 1, action neuron tanh(sum(inputs)) -1, 1

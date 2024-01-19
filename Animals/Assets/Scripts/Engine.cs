@@ -4,6 +4,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 using Random = UnityEngine.Random;
+using System.Timers;
 
 public class Engine : MonoBehaviour
 {
@@ -14,9 +15,12 @@ public class Engine : MonoBehaviour
     public static int MAPSIZE;
     public int numberOfPuddles;
     public int puddleSize;
+
     [HideInInspector]
     public Area[,] sections;
     public List<Area> foodAreas;
+    public List<Area> waterAreas;
+    public List<Area> grassAreas;
     public Severity density;
     public Severity grassRate;
     public Severity obstacleRate;
@@ -24,6 +28,12 @@ public class Engine : MonoBehaviour
     public Severity plantRate;
     public float timeScale;
     public List<Material> materials;
+    public static int eatCountsupposed;
+    public static int eatCountDone;
+    public static int drinkCountsupposed;
+    public static int drinkCountDone;
+    public static int actionSupposed;
+    public static int actionDone;
 
     #region Nature Accessers
 
@@ -37,7 +47,9 @@ public class Engine : MonoBehaviour
 
     [Header("Animal parameters")]
     public List<GameObject> availableSkeletons;
-    public int animalCount;
+    public int sampleSize;
+    public int samples;
+    public int selectionCount;
     public int numberOfSensorNeurons;
     public int numberOfInnerNeurons;
     public int numberOfInnerLayers;
@@ -64,8 +76,8 @@ public class Engine : MonoBehaviour
     void Start()
     {
         Camera cam = Camera.main;
-        cam.transform.position = new Vector3(MAPSIZE / 2f, cam.transform.position.y,cam.transform.position.z);
-        generation.GenerateInitialPopulation();
+        //cam.transform.position = new Vector3(MAPSIZE / 2f, cam.transform.position.y,cam.transform.position.z);
+        generation.GenerateFirstPopulation();
     }
     public void Initialize()
     {
@@ -74,8 +86,8 @@ public class Engine : MonoBehaviour
         sections = new Area[mapSize, mapSize];
         LoadNatureElements();
         CreateSections(numberOfPuddles);
-        var X = animalCount;
     }
+
 
     //public void CreateAnimal(AnimalType type)
     //{
@@ -130,7 +142,7 @@ public class Engine : MonoBehaviour
             for (int i = (int)sourcePos.z - sourceThickness / 2; i < (int)sourcePos.z + sourceThickness / 2; i++)
             {
                 if (i < mapSize && i >= 0)
-                    sections[(int)sourcePos.x, i] = new WaterArea((int)sourcePos.x, i);
+                    MakeWaterTile((int)sourcePos.x, i);
             }
             PopulateWaterAreaInnerXOriented(sourcePos, firstTickness, orientation);
             PopulateWaterAreaInnerXOriented(sourcePos, secondTickness, -orientation);
@@ -140,7 +152,7 @@ public class Engine : MonoBehaviour
             for (int i = (int)sourcePos.x - sourceThickness / 2; i < (int)sourcePos.x + sourceThickness / 2; i++)
             {
                 if (i < mapSize && i >= 0)
-                    sections[i, (int)sourcePos.z] = new WaterArea(i, (int)sourcePos.z);
+                    MakeWaterTile(i, (int)sourcePos.z);
             }
             PopulateWaterAreaInnerYOriented(sourcePos, firstTickness, orientation);
             PopulateWaterAreaInnerYOriented(sourcePos, secondTickness, -orientation);
@@ -157,7 +169,7 @@ public class Engine : MonoBehaviour
         for (int i = (int)sourcePos.z - sourceThickness / 2; i < (int)sourcePos.z + sourceThickness / 2; i++)
         {
             if (i < mapSize && i >= 0)
-                sections[(int)sourcePos.x, i] = new WaterArea((int)sourcePos.x, i);
+                MakeWaterTile((int)sourcePos.x, i);
         }
 
         var newTickness = UnityEngine.Random.Range(1, 4) == 1 ? sourceThickness + 1 : sourceThickness - 2;
@@ -175,13 +187,20 @@ public class Engine : MonoBehaviour
         for (int i = (int)sourcePos.x - sourceThickness / 2; i < (int)sourcePos.x + sourceThickness / 2; i++)
         {
             if (i < mapSize && i >= 0)
-                sections[i, (int)sourcePos.z] = new WaterArea(i, (int)sourcePos.z);
+                MakeWaterTile(i, (int)sourcePos.z);
         }
 
         var newTickness = UnityEngine.Random.Range(1, 4) == 1 ? sourceThickness + 1 : sourceThickness - 2;
 
         if (newTickness > 0)
             PopulateWaterAreaInnerYOriented(sourcePos + orientation, newTickness, orientation);
+    }
+    private void MakeWaterTile(int x, int z)
+    {
+        var newArea = new WaterArea(x, z);
+        sections[x, z] = newArea;
+        waterAreas.Add(newArea);
+
     }
 
     private void GenerateGrass()
@@ -216,7 +235,9 @@ public class Engine : MonoBehaviour
             {
                 if (sections[i, j] == null)
                 {
-                    sections[i, j] = new GrassArea(i, j);
+                    var area = new GrassArea(i, j);
+                    grassAreas.Add(area);
+                    sections[i, j] = area;
                     GameObject element = GenerateNatureObjects(i, j, total);
                     if (element != null)
                     {

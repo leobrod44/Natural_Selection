@@ -19,7 +19,15 @@ public abstract class Neuron
 public interface Destination
 {
     public List<Tuple<int, float>> GetWeights();
+
+    public void ChangeWeight(int sourceId, float val);
+
+    public void RemoveWeight(int source);
     public void AddWeight(int sourceId, float val);
+
+    public void SetBias(float val);
+
+    public float GetBias();
     public float GetActivatedValue();
     public void SetActivatedValue(float val);
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -20,12 +21,21 @@ public abstract class SensorNeuron : Neuron, Origin
     }
     protected Vector3 GetClosestTile(Collider[] collisions) {
 
+        if (collisions.Count() == 0){
+            return new Vector3(parent.transform.position.x, 0, parent.transform.position.z);
+        }
         float closest = float.MaxValue;
         GameObject closestTile = collisions[0].gameObject;
         foreach (var tile in collisions)
         {
+            var p = parent.transform.position;
             var distance = (tile.transform.position - parent.transform.position).sqrMagnitude;
-            if (distance < closest)
+            var animalX = (int)parent.transform.position.x;
+            var animalZ = (int)parent.transform.position.z;
+            var tileX = (int)tile.transform.position.x;
+            var tileZ = (int)tile.transform.position.z;
+            if (distance < closest && 
+                animalX != tileX && animalZ != tileZ)
             {
                 closest = distance;
                 closestTile = tile.gameObject;
@@ -95,7 +105,7 @@ public class WaterDistanceForwardSensor : SensorNeuron
             var distanceVector = GetDistance(closestWater);
             var pos = parent.transform.position;
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Cos(angle) * distanceVector.magnitude;
+            closest = Mathf.Cos(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
         }
         //Debug.Log("Water: " + closest);
         SetOriginValue(closest);
@@ -122,7 +132,7 @@ public class WaterDistanceSidesSensor : SensorNeuron
             brain.nearestWater = closestWater;
             var distanceVector = GetDistance(closestWater);
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Sin(angle) * distanceVector.magnitude;
+            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
         }
         //Debug.Log("Water: " + closest);
         SetOriginValue(closest);
@@ -148,8 +158,9 @@ public class FoodDistanceForwardSensor : SensorNeuron
             brain.nearestFood = closestFood;
             var distanceVector = GetDistance(closestFood);
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Cos(angle) * distanceVector.magnitude;
+            closest = Mathf.Cos(angle) * distanceVector.magnitude *1/animal.eyeSight;
         }
+
         //Debug.Log("Food: " + closest);
         SetOriginValue(closest);
     }
@@ -175,7 +186,7 @@ public class FoodDistanceSidesSensor : SensorNeuron
             brain.nearestFood = closestFood;
             var distanceVector = GetDistance(closestFood);
             var angle = Mathf.Deg2Rad * Vector3.Angle(distanceVector, parent.transform.forward);
-            closest = Mathf.Sin(angle) * distanceVector.magnitude;
+            closest = Mathf.Sin(angle) * distanceVector.magnitude * 1 / animal.eyeSight;
         }
         //Debug.Log("Food: " + closest);
         SetOriginValue(closest);
