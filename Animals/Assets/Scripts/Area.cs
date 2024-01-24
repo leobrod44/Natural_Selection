@@ -8,8 +8,6 @@ public class Area
 {
     
     private readonly GameObject Ground = GameObject.Find("Ground").gameObject;
-
-    public List<GameObject> currentAnimals;
     public GameObject Tile { get; set; }
 
     private GameObject m_element;
@@ -33,7 +31,6 @@ public class Area
 
     public Area(int i, int j)
     {
-        currentAnimals = new List<GameObject>();
         CreateTile(i, j);
     }
     private void CreateTile(int i, int j)
@@ -72,6 +69,7 @@ public class WaterArea : Area
         Type = AreaType.Water;
         Tile.layer = 4;
         Tile.GetComponent<Renderer>().material = mat;
+        Tile.GetComponent<MeshCollider>().enabled = true;
         waterTileCount++;
     }
 }

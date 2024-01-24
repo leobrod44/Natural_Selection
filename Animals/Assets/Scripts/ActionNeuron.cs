@@ -65,6 +65,7 @@ public abstract class ActionNeuron: Neuron, Destination
     {
         result = val;
     }
+
 }
 
 public class RotateSlightRightAction : ActionNeuron
@@ -146,6 +147,7 @@ public class TurnAroundAction : ActionNeuron
 public class DoNothingAction : ActionNeuron
 {
     private const int id = 13;
+    Body body;
     public DoNothingAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
@@ -160,7 +162,6 @@ public class DoNothingAction : ActionNeuron
 public class TargetFood : ActionNeuron
 {
     private  int id = lastInputNeuron + 1;
-    private Vector3 foodPosition;
 
     public TargetFood(GameObject parent) : base(parent)
     {
@@ -169,44 +170,45 @@ public class TargetFood : ActionNeuron
        
     }
 
-    public override void DoAction()
-    {
-        this.foodPosition = brain.nearestFood;
-        Vector3 foodDirection = foodPosition - parent.transform.position;
+    public override void DoAction() { 
+
+        Vector3 foodDirection =brain.nearestFood- parent.transform.position;
         Quaternion foodRotation = Quaternion.LookRotation(foodDirection);
         parent.transform.rotation = foodRotation;
-        if (brain.nearestFood != Vector3.zero)
-            this.parent.transform.position = brain.nearestFood;
-        Engine.eatCountsupposed++;
-
+        if (brain.nearestFood != Vector3.zero & animal.MoveCloser(brain.nearestFood))
+        {
+            animal.Eat();
+            animal.eatTimer = Engine.numEatTicks;
+            animal.currentEyeSight = animal.baseEyeSight;
+        }
     }
 }
 
 public class TargetWater : ActionNeuron
 {
-    private int id = (lastInputNeuron+2);
-    private Vector3 waterPosition;
+    private int id = (lastInputNeuron + 2);
     public TargetWater(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
         Id = id;
-        
+
     }
     public override void DoAction()
     {
-      
-        this.waterPosition = brain.nearestWater;
-        Vector3 waterDirection = waterPosition - parent.transform.position;
+        Vector3 waterDirection = brain.nearestWater - parent.transform.position;
         Quaternion waterRotation = Quaternion.LookRotation(waterDirection);
         parent.transform.rotation = waterRotation;
-        if (brain.nearestWater != Vector3.zero)
-            this.parent.transform.position = brain.nearestWater;
-        Engine.drinkCountsupposed++;
-    }
+        if (brain.nearestWater != Vector3.zero & animal.MoveCloser(brain.nearestWater))
+        {
+            animal.Drink();
+            animal.drinkTimer = Engine.numDrinkTicks;
+            animal.currentEyeSight= animal.baseEyeSight;
+        }
+    } 
 }
 public class RotateRandomAction : ActionNeuron
 {
-    private  int id = lastInputNeuron + 3;
+    private int id = lastInputNeuron + 4;
     public RotateRandomAction(GameObject parent) : base(parent)
     {
         animal = parent.GetComponent<Animal>();
@@ -219,8 +221,26 @@ public class RotateRandomAction : ActionNeuron
         var randY = UnityEngine.Random.Range(-1, 2);
         Vector3 pos = parent.transform.position;
         parent.transform.position = new Vector3(pos.x + randX, 0, pos.z + randY);
+
+
     }
 }
+    public class Scout : ActionNeuron
+    {
+        private int id = lastInputNeuron + 3;
+        public Scout(GameObject parent) : base(parent)
+        {
+            animal = parent.GetComponent<Animal>();
+            Id = id;
+        }
+
+        public override void DoAction()
+        {
+            animal.scountTimer = Engine.numScoutTicks;
+            animal.currentEyeSight = animal.baseEyeSight* 3;
+        }
+    }
+
 
 //public class Breed : ActionNeuron
 //{

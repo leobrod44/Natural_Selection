@@ -24,12 +24,18 @@ public class Brain
 
     public Vector3 nearestFood;
 
+    public Vector3 lastFood;
+
+    public Vector3 lastWater;
+
     public Vector3 nearestAlly;
 
     private Vector3 nearestEnemy;
 
     private Engine engine;
     public bool mutated = false;
+
+
 
     public Brain(GameObject parent)
     {
@@ -43,7 +49,7 @@ public class Brain
             {4, new FoodDistanceSensor(parent)},
             {5, new TargetWater(parent)},
             {6, new TargetFood(parent)},
-            {7, new RotateRandomAction(parent)},
+            {7, new Scout(parent)},
             //{Ally distance
             //{Enemy distance
             //{7, new RotateSlightRightAction(parent)},
@@ -106,11 +112,11 @@ public class Brain
         {
             // Select a random amount of elements from the usedInternals set
             var innerActors = usedInternals.Union(usedActors);
-            int numElements = UnityEngine.Random.Range(innerActors.Count()/2, innerActors.Count()+1);
+            int numElements = UnityEngine.Random.Range(0, innerActors.Count()+1);
             HashSet<int> selectedElements = new HashSet<int>(usedInternals.OrderBy(x => UnityEngine.Random.value).Take(numElements));
             foreach(int id2 in selectedElements)
             {
-                var weight = UnityEngine.Random.Range(-4f, 4f);
+                var weight = UnityEngine.Random.Range(-engine.weightLimit, engine.weightLimit);
                 weight = weight == 0f ? 0.01f : weight;
                 string connection = CreateConnection(id, id2, weight);
                 SensorConnections.Add(connection);
@@ -119,11 +125,11 @@ public class Brain
         //create inner neuron connections
         foreach (int id in usedInternals)
         {
-            int numElements = UnityEngine.Random.Range(1, usedActors.Count+1);
+            int numElements = UnityEngine.Random.Range(0, usedActors.Count+1);
             HashSet<int> selectedElements = new HashSet<int>(usedActors.OrderBy(x => UnityEngine.Random.value).Take(numElements));
             foreach (int id2 in selectedElements)
             {
-                var weight = UnityEngine.Random.Range(-4f, 4f);
+                var weight = UnityEngine.Random.Range(engine.weightLimit, engine.weightLimit);
                 weight = weight == 0f ? 0.01f : weight;
                 string connection = CreateConnection(id, id2, weight);
                 InnerConnections.Add(connection);
@@ -277,7 +283,7 @@ public class Brain
 
 
         //get the highest value acion neuron
-       
+
         //var highestValueNeuron = actionNeurons.Aggregate(actionNeurons.First(), (highest, next) 
         //    => next.GetActivatedValue() > highest.GetActivatedValue() ? next: highest);
 
@@ -313,6 +319,7 @@ public class Brain
             neuron = (Neurons[Sensors[i]]);
             t = neuron.GetType();
             ((SensorNeuron)Neurons[Sensors[i]]).SetSensorValue();
+
         }
     }
     /// <summary>

@@ -26,7 +26,7 @@ public class UI : MonoBehaviour
     private void Update()
     {
         // Check if the Text component is assigned
-        if (Generation.generation >= lastValueGen)
+        if (Generation.generation > lastValueGen)
         {
             generation.text = Generation.generation.ToString();
             if (Generation.generation > 0)
@@ -44,8 +44,15 @@ public class UI : MonoBehaviour
                     lifepsanVariation.color = Color.red;
                     
                 }
+                if( Generation.highScore == lastScore)
+                {
+                    lifepsan.text = Generation.highScore.ToString();
+                    lifepsanVariation.text = "" + (Generation.highScore - lastScore).ToString();
+                    lifepsanVariation.color = Color.white;
+                }
             }
             lastScore = Generation.highScore;
+            lastValueGen = Generation.generation;
         }
        
      

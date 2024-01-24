@@ -13,11 +13,12 @@ public class Generation : MonoBehaviour
     // Start is called before the first frame update
 
     
-    public static int generation;
+    public static int generation = 1;
     public static int highScore;
     public int deadline;
     public int mutationPercentage;
     private Engine engine;
+
     [SerializeField]
     public List<GameObject> currentPopulation;
     public List<GameObject> originalPopulation;
@@ -40,6 +41,9 @@ public class Generation : MonoBehaviour
         survivors = new List<GameObject>();
         originalPopulation = new List<GameObject>();
         generationPopulation = new List<GameObject>();
+        itteration = 1;
+        GenerateFirstPopulation();
+        generationPopulation = currentPopulation;
     }
 
     // Update is called once per frame
@@ -56,25 +60,24 @@ public class Generation : MonoBehaviour
             
             if (itteration == engine.samples)
             {
-                Clean(survivors, null);
+                var avg = AverageLifespan(generationPopulation);
                 survivors = new List<GameObject>();
                 var top = SelectTop(engine.selectionCount, generationPopulation);
                 survivors.AddRange(top); 
                 currentPopulation= new List<GameObject>();
-                Clean(generationPopulation, survivors);
                 generationPopulation = new List<GameObject>();
                 GenerateNewPopulation(survivors);
-                generation++;
-                var avg = AverageLifespan(survivors);
-
+                generationPopulation.AddRange(currentPopulation);
+                var x = survivors.Concat(currentPopulation);
+                Clean(x.ToList());
+                generation++;             
                 highScore = avg;
-                
-                Debug.Log("Generation: " + generation + " average lifespan: " + AverageLifespan(survivors));
+                Debug.Log("Generation: " + generation + " average lifespan: " + avg);
 
                 //Debug.Log("EAT supposed: " + Engine.eatCountsupposed + " done: " + Engine.eatCountDone + " DRINK supposed: " + Engine.drinkCountsupposed + " done: " + Engine.drinkCountDone);
                 
                 originalPopulation = currentPopulation;
-                itteration = 0;
+                itteration = 1;
                 
             }
             else
@@ -136,9 +139,15 @@ public class Generation : MonoBehaviour
     {
         //TODO change selection according to fitness
         int numAnimals = number;
+
+        foreach(var animal in population)
+        {
+            var a = animal.GetComponent<Animal>();
+            animal.GetComponent<Animal>().fitness = a.age* engine.ageFactor+a.foodCount*engine.foodFactor+a.waterCount* engine.waterFactor;
+        }
         //int maxNum = percentage <= population.Count ? percentage: population.Count ;
-        List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().age).Reverse().ToList();
-        List<int> ages = ageOrdered.Select(x => x.GetComponent<Animal>().age).ToList();
+        List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().fitness).Reverse().ToList();
+        List<int> ages = ageOrdered.Select(x => x.GetComponent<Animal>().fitness).ToList();
         //Debug.Log("Selected average lifespan: " + (ages.Take(numAnimals).ToList().Sum() / ages.Take(numAnimals).ToList().Count));
         return ageOrdered.Take(numAnimals).ToList();
     }
@@ -196,6 +205,12 @@ public class Generation : MonoBehaviour
             o.GetComponent<Animal>().brain.mutated = false;
         }
         o.GetComponent<Animal>().age = 0;
+        o.GetComponent<Animal>().brain.nearestFood = Vector3.zero;
+        o.GetComponent<Animal>().brain.nearestWater = Vector3.zero;
+        o.GetComponent<Animal>().brain.lastFood = Vector3.zero;
+        o.GetComponent<Animal>().brain.lastWater = Vector3.zero;
+
+        var z2 =o.GetComponent<Animal>().body;
 
         return o;
 
@@ -391,21 +406,23 @@ public class Generation : MonoBehaviour
     }
 
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public void Clean(List<GameObject> pop, List<GameObject> except)
+    public void Clean(List<GameObject> except)
     {
-        foreach (var previous in pop)
+        List<Animal> activeAndInactive = GameObject.FindObjectsOfType<Animal>(true).ToList();
+        foreach (var animal in activeAndInactive)
         {
 
-            if (except != null){
-                if (except.Contains(previous)) //!originalPopulation.Contains(previous) && 
+            if (except != null)
+            {
+                if (except.Contains(animal.gameObject)) //!originalPopulation.Contains(previous) && 
                 {
                     continue;
                 }
             }
-                
-            previous.SetActive(true);
-            Destroy(previous);
+            animal.gameObject.SetActive(true);
+            DestroyImmediate(animal.gameObject);
         }
+        List<Animal> activeAndInactive2 = GameObject.FindObjectsOfType<Animal>(true).ToList();
     }
     public void ResetMap()
     {
@@ -450,12 +467,16 @@ public class Generation : MonoBehaviour
     }
     public GameObject SpawnAnimal(GameObject skeleton)
     {
-        var rand = (int)Random.Range(0, engine.grassAreas.Count);
-        var area = engine.grassAreas.ElementAt(rand);
-        skeleton.transform.position = area.Tile.transform.position;
+        //var rand = (int)Random.Range(0, engine.grassAreas.Count);
+        //var area = engine.grassAreas.ElementAt(rand);
+        //skeleton.transform.position = area.Tile.transform.position;
+        var x = (int)Random.Range(engine.mapSize/2-80, engine.mapSize/2+80);
+        var y = (int)Random.Range(engine.mapSize/2 - 80, engine.mapSize/2 + 80);
+        skeleton.transform.position = new Vector3(x, 0, y);
         return skeleton;
     }
-    IEnumerator WaitForAllInactiveCoroutine(List<GameObject> elementsToCheck)
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    IEnumerator  WaitForAllInactiveCoroutine(List<GameObject> elementsToCheck)
     {
         // Wait until all elements are inactive
         while (!AreAllElementsInactive(elementsToCheck))
@@ -466,6 +487,7 @@ public class Generation : MonoBehaviour
         // All elements are inactive, continue with your logic here
         Debug.Log("All elements are inactive. Continuing...");
 
+
         // Add your code to execute after all elements are inactive
     }
 
@@ -474,6 +496,10 @@ public class Generation : MonoBehaviour
         // Check if all elements are inactive
         foreach (GameObject element in elementsToCheck)
         {
+            if(element==null)
+            {
+                continue;
+            }
             if (element.activeSelf)
             {
                 return false; // At least one element is still active

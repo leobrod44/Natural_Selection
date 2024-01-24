@@ -11,6 +11,7 @@ public class Engine : MonoBehaviour
     [Header("Nature and Map parameters")]
 
     public int mapSize;
+
     [HideInInspector]
     public static int MAPSIZE;
     public int numberOfPuddles;
@@ -53,16 +54,23 @@ public class Engine : MonoBehaviour
     public int numberOfSensorNeurons;
     public int numberOfInnerNeurons;
     public int numberOfInnerLayers;
+    public int foodFactor;
+    public int waterFactor;
+    public int ageFactor;
+    public float weightLimit;
     public float animalDecisionRate;
     public float waterDepletionConstant;
     public float foodDepletionConstant;
+    public float eatTicks;
+    public float drinkTicks;
+    public float scoutTicks;
+    public static int numEatTicks;
+    public static int numDrinkTicks;
+    public static int numScoutTicks;
     public Tuple<int, int> eyeSightRange;
     
 
     [Header("Context parameters")]
-    public float eatTime;
-    public float drinkTime;
-    public float reproduceTime;
 
     public Generation generation;
 
@@ -70,14 +78,15 @@ public class Engine : MonoBehaviour
     void Awake()
     {
         Initialize();
-        
+        numEatTicks = (int)eatTicks;
+        numDrinkTicks = (int)drinkTicks;
+        numScoutTicks = (int)scoutTicks;
         Time.timeScale = timeScale;
     }
     void Start()
     {
         Camera cam = Camera.main;
         //cam.transform.position = new Vector3(MAPSIZE / 2f, cam.transform.position.y,cam.transform.position.z);
-        generation.GenerateFirstPopulation();
     }
     public void Initialize()
     {

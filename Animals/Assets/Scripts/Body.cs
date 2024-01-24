@@ -90,18 +90,18 @@ public class Body
     public void DisplayName(GameObject parent)
     {
         GameObject nameDisplay = new GameObject("Name tag");
-        nameDisplay.transform.rotation = Camera.main.transform.rotation;
-        nameDisplay.transform.LookAt(nameDisplay.transform.position + Camera.main.transform.rotation * Vector3.forward, Camera.main.transform.rotation * Vector3.up);
+        nameDisplay.transform.parent = parent.transform;
+        nameDisplay.transform.rotation = Quaternion.Euler(48.526f, 0, 0);
+        //nameDisplay.transform.LookAt(nameDisplay.transform.position + Camera.main.transform.rotation * Vector3.forward,
+        //Camera.main.transform.rotation* Vector3.up);
         TextMesh tm = nameDisplay.AddComponent<TextMesh>();
         tm.text = parent.name;
-        nameDisplay.transform.parent = parent.transform;
-        nameDisplay.transform.position = new Vector3(parent.transform.position.x, parent.transform.position.y+1, parent.transform.position.z);
-        tm.color = Color.magenta;
-        tm.fontStyle = FontStyle.Bold;
+        nameDisplay.transform.position = new Vector3(parent.transform.position.x, parent.transform.position.y+6, parent.transform.position.z);
+        tm.color = Color.white;
         tm.alignment = TextAlignment.Center;
         tm.anchor = TextAnchor.MiddleCenter;
         tm.characterSize = 0.065f;
-        tm.fontSize = 100;
+        tm.fontSize = 200;
     }
 
 }

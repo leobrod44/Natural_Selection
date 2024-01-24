@@ -19,7 +19,7 @@ public abstract class SensorNeuron : Neuron, Origin
         var distanceVector = tile - parent.transform.position;
         return distanceVector;
     }
-    protected Vector3 GetClosestTile(Collider[] collisions) {
+    protected Vector3 GetClosestTile(Collider[] collisions, Vector3 exception) {
 
         if (collisions.Count() == 0){
             return new Vector3(parent.transform.position.x, 0, parent.transform.position.z);
@@ -34,8 +34,12 @@ public abstract class SensorNeuron : Neuron, Origin
             var animalZ = (int)parent.transform.position.z;
             var tileX = (int)tile.transform.position.x;
             var tileZ = (int)tile.transform.position.z;
-            if (distance < closest && 
-                animalX != tileX && animalZ != tileZ)
+            if (distance > closest ||
+                (animalX == tileX && animalZ == tileZ) || (animalX == exception.x && animalZ == exception.z))
+            {
+                continue;
+            }
+            else
             {
                 closest = distance;
                 closestTile = tile.gameObject;
@@ -96,14 +100,14 @@ public class WaterDistanceSensor : SensorNeuron
     public override void SetSensorValue()
     {
 
-        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << WATERLAYER);
+        Collider[] inRadiusWater = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.currentEyeSight, 1 << WATERLAYER);
         float closest = 0;
         if (inRadiusWater.Length > 0)
         {
-            var closestWater = GetClosestTile(inRadiusWater);
+            var closestWater = GetClosestTile(inRadiusWater, Vector3.zero);
             brain.nearestWater = closestWater;
             var distanceVector = GetDistance(closestWater);
-            closest = distanceVector.magnitude * 1 / animal.eyeSight;
+            closest = distanceVector.magnitude * 1 / animal.currentEyeSight;
         }
 
         SetOriginValue(closest);
@@ -123,14 +127,16 @@ public class FoodDistanceSensor : SensorNeuron
     public override void SetSensorValue()
     {
 
-        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.eyeSight, 1 << FOODLAYER);
+        Collider[] inRadiusFood = Physics.OverlapSphere(new Vector3(parent.transform.position.x, 0, parent.transform.position.z), animal.baseEyeSight, 1 << FOODLAYER);
         float closest = 0;
         if (inRadiusFood.Length > 0)
         {
-            var closestFood = GetClosestTile(inRadiusFood);
+            var closestFood = GetClosestTile(inRadiusFood, brain.lastFood);
             brain.nearestFood = closestFood;
+            brain.lastFood = closestFood;
+          
             var distanceVector = GetDistance(closestFood);
-            closest =distanceVector.magnitude * 1 / animal.eyeSight;
+            closest =distanceVector.magnitude * 1 / animal.baseEyeSight;
         }
         //Debug.Log("Food: " + closest);
         SetOriginValue(closest);
