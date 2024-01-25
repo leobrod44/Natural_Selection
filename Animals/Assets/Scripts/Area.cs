@@ -11,6 +11,7 @@ public class Area
     public GameObject Tile { get; set; }
 
     private GameObject m_element;
+    public AreaType Type;
     public GameObject Element
     {
         get
@@ -27,7 +28,7 @@ public class Area
         }
     }
 
-    public AreaType Type;
+    
 
     public Area(int i, int j)
     {
@@ -63,12 +64,20 @@ public class WaterArea : Area
 {
     private static int waterTileCount = 0;
     Material mat = GameObject.Find("Engine").GetComponent<Engine>().materials.FirstOrDefault(x => x.name == "Water");
-    public WaterArea(int i, int j) : base(i, j)
+    public WaterArea(int i, int j,bool drinkable) : base(i, j)
     {
+        if (drinkable)
+        {
+            Tile.GetComponent<Renderer>().material.color = new Color(200,240,244); 
+            Type = AreaType.Drinkable;
+        }
+        else
+        {
+            Type = AreaType.Water;
+            Tile.GetComponent<Renderer>().material = mat;
+        }
         Tile.name = "Water "+ waterTileCount;
-        Type = AreaType.Water;
         Tile.layer = 4;
-        Tile.GetComponent<Renderer>().material = mat;
         Tile.GetComponent<MeshCollider>().enabled = true;
         waterTileCount++;
     }
@@ -80,6 +89,7 @@ public enum AreaType
     Water,
     Food,
     Obstacle,
-    Grass
+    Grass,
+    Drinkable
 }
 

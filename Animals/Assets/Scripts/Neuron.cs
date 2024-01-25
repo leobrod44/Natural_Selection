@@ -7,12 +7,13 @@ using UnityEngine;
 public abstract class Neuron
 {
     //when adding a new neuron, add the class, add it to the brain dict, change total num
-    public static readonly int totalNeuronsAvailable = 7;
-    public static readonly int lastInputNeuron = 4;
+    public static int totalNeuronsAvailable = 0;
+    public static int lastInputNeuron = 0;
     public Animal animal;
     public GameObject parent { get; set; }
-    public int Id;
+    private int Id;
     public Brain brain => animal.brain;
+    public abstract int GetId();
 
 }
 

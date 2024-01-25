@@ -17,9 +17,9 @@ public class Body
     public float bodySize;
     public float eyeSize;
     public float legSize;
-    private Vector3 defaultTorso= new Vector3(0.714f, 0.396f, 1.151f)*3;
-    private Vector3 defaultHead = new Vector3(0.4719f, 0.729f, 0.2379f)*1;
-    private Vector3 defaultLegs = new Vector3(0.3f, 1.25f, 0.159f)*1;
+    private Vector3 defaultTorso= new Vector3(0.714f, 0.396f, 1.151f)*2;
+    private Vector3 defaultHead = new Vector3(0.4719f, 0.729f, 0.2379f)*0.6f;
+    private Vector3 defaultLegs = new Vector3(0.3f, 1.25f, 0.159f)*0.6f;
 
 
     #region Physical Components

@@ -8,11 +8,16 @@ public class InnerNeuron : Neuron, Destination, Origin
     private List<Tuple<int, float>> m_weights;
     private float m_innerValue;
     private float m_bias;
+    private int id;
     public InnerNeuron(GameObject parent, int Id)
     {
         this.parent = parent;
-        this.Id = Id;
+        this.id = Id;
         m_weights = new List<Tuple<int, float>>();
+    }
+    public override int GetId()
+    {
+        return id;
     }
     public void ChangeWeight(int sourceId, float val)
     {
@@ -21,6 +26,7 @@ public class InnerNeuron : Neuron, Destination, Origin
             if (weight.Item1 == sourceId)
             {
                 m_weights.Remove(weight);
+             
                 m_weights.Add(new Tuple<int, float>(sourceId, val));
                 break;
             }

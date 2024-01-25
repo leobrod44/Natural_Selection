@@ -22,6 +22,7 @@ public class Engine : MonoBehaviour
     public List<Area> foodAreas;
     public List<Area> waterAreas;
     public List<Area> grassAreas;
+    public int totalElements;
     public Severity density;
     public Severity grassRate;
     public Severity obstacleRate;
@@ -51,12 +52,11 @@ public class Engine : MonoBehaviour
     public int sampleSize;
     public int samples;
     public int selectionCount;
-    public int numberOfSensorNeurons;
     public int numberOfInnerNeurons;
     public int numberOfInnerLayers;
-    public int foodFactor;
-    public int waterFactor;
-    public int ageFactor;
+    public float foodFactor;
+    public float waterFactor;
+    public float ageFactor;
     public float weightLimit;
     public float animalDecisionRate;
     public float waterDepletionConstant;
@@ -129,14 +129,25 @@ public class Engine : MonoBehaviour
     }
     private void GeneratePuddles(int numPuddles)
     {
+        int puddleSourceX=0;
+        int puddleSourceY=0;
         for (int puddleCount = 0; puddleCount < numPuddles; puddleCount++)
         {
             var puddleSeed = UnityEngine.Random.Range(15, puddleSize);
             var puddleThickness = UnityEngine.Random.Range(puddleSeed / 2, puddleSeed);
-            var puddleSourceX = UnityEngine.Random.Range(0, mapSize);
-            var puddleSourceY = UnityEngine.Random.Range(0, mapSize);
+            puddleSourceX = UnityEngine.Random.Range(0, mapSize);
+            puddleSourceY = UnityEngine.Random.Range(0, mapSize);
+            while (puddleSourceX<= Engine.MAPSIZE/2+10 && puddleSourceX>= Engine.MAPSIZE/2 - 10)
+            {
+                puddleSourceX = UnityEngine.Random.Range(0, mapSize);
+            }
+            while (puddleSourceY <= Engine.MAPSIZE / 2 + 10 && puddleSourceY >= Engine.MAPSIZE/2 - 10)
+            {
+                puddleSourceY = UnityEngine.Random.Range(0, mapSize);
+            }
             PopulateWaterArea(new Vector3(puddleSourceX, 0, puddleSourceY), puddleThickness, GenerateOrientation());
         }
+
     }
 
     private void PopulateWaterArea(Vector3 sourcePos, int sourceThickness, Vector3 orientation)
@@ -206,7 +217,8 @@ public class Engine : MonoBehaviour
     }
     private void MakeWaterTile(int x, int z)
     {
-        var newArea = new WaterArea(x, z);
+        System.Random rnd = new System.Random();
+        Area newArea = rnd.Next(30) == 0? new WaterArea(x, z, true): new WaterArea(x, z,false);
         sections[x, z] = newArea;
         waterAreas.Add(newArea);
 
@@ -218,7 +230,7 @@ public class Engine : MonoBehaviour
         int obstacle = (int)obstacleRate;
         int tree = (int)treeRate;
         int plant = (int)plantRate;
-        var total = grass + obstacle + plant + tree;
+        var total = totalElements>=20?20:totalElements;
         objects = new List<List<UnityEngine.Object>>();
 
         for (int i = 0; i < grass; i++)
@@ -278,6 +290,10 @@ public class Engine : MonoBehaviour
         }
         //add tree factor because a lot
         var random = UnityEngine.Random.Range(0, limit);
+        if (random >= objects.Count)
+        {
+            return null;
+        }
         var scaleChange = UnityEngine.Random.Range(0, 2);
         GameObject newElement = Instantiate(objects[random][UnityEngine.Random.Range(0, objects[random].Count)] as GameObject);
         newElement.transform.position = new Vector3(x, 0, y);

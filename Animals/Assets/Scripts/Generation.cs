@@ -14,7 +14,7 @@ public class Generation : MonoBehaviour
 
     
     public static int generation = 1;
-    public static int highScore;
+    public static float highScore;
     public int deadline;
     public int mutationPercentage;
     private Engine engine;
@@ -24,6 +24,7 @@ public class Generation : MonoBehaviour
     public List<GameObject> originalPopulation;
     public List<GameObject> generationPopulation;
     public List<GameObject> survivors;
+
     public static int currentPopulationSize;
     private float time;
     private bool timeLimitFlag=true;
@@ -50,9 +51,12 @@ public class Generation : MonoBehaviour
     void Update()
     {
 
-        if (Time.time > time + deadline || currentPopulationSize<=0)
+        if (currentPopulationSize<=0)
         {
-            StartCoroutine(WaitForAllInactiveCoroutine(currentPopulation));
+            if (!AreAllElementsInactive(currentPopulation))
+            {
+                return;
+            }
             //var t = AverageLifespan(currentPopulation);
             //Debug.Log("Action supposed: " + Engine.actionSupposed + " done: " + Engine.actionDone);
             //((int)((float)percentage / 100 * (float)engine.animalCount));
@@ -60,9 +64,11 @@ public class Generation : MonoBehaviour
             
             if (itteration == engine.samples)
             {
-                var avg = AverageLifespan(generationPopulation);
+                
                 survivors = new List<GameObject>();
+                var avg = AverageLifespan(generationPopulation);
                 var top = SelectTop(engine.selectionCount, generationPopulation);
+                
                 survivors.AddRange(top); 
                 currentPopulation= new List<GameObject>();
                 generationPopulation = new List<GameObject>();
@@ -115,16 +121,17 @@ public class Generation : MonoBehaviour
         //add varying colors say fall, winter, spring 
 
     }
-    private int AverageLifespan(List<GameObject> population)
+    private float AverageLifespan(List<GameObject> population)
     {
         try
         {
-            var total = 0;
+            float total = 0;
             foreach (var animal in population)
             {
-                total += animal.GetComponent<Animal>().age;
+                var a = animal.GetComponent<Animal>();
+                total += (float)a.age * engine.ageFactor + (float)a.foodCount * engine.foodFactor + (float)a.waterCount * engine.waterFactor;
             }
-            return total / population.Count;
+            return (float)total / (float)population.Count;
         }
         catch(Exception e)
         {
@@ -147,7 +154,7 @@ public class Generation : MonoBehaviour
         }
         //int maxNum = percentage <= population.Count ? percentage: population.Count ;
         List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().fitness).Reverse().ToList();
-        List<int> ages = ageOrdered.Select(x => x.GetComponent<Animal>().fitness).ToList();
+        List<float> ages = ageOrdered.Select(x => x.GetComponent<Animal>().fitness).ToList();
         //Debug.Log("Selected average lifespan: " + (ages.Take(numAnimals).ToList().Sum() / ages.Take(numAnimals).ToList().Count));
         return ageOrdered.Take(numAnimals).ToList();
     }
@@ -191,13 +198,12 @@ public class Generation : MonoBehaviour
     }
     private GameObject CreateOffSprings(GameObject animal1, GameObject animal2)
     {
-        Brain x;
-
         GameObject o = BreedBodies(animal1, animal2);
-        x = o.GetComponent<Animal>().brain;
         Brain brains2 = animal2.GetComponent<Animal>().brain;
         Brain brains1 = animal1.GetComponent<Animal>().brain;
-        o.GetComponent<Animal>().brain = Crossover(brains1, brains2);
+        o.GetComponent<Animal>().brain = new Brain(o);
+        o.GetComponent<Animal>().brain.MergeConnections(brains1, brains2, mutationPercentage);
+        var t=o.GetComponent<Animal>().brain;
         if (o.GetComponent<Animal>().brain.mutated)
         {
             o.GetComponent<Animal>().body.SetColor(o.GetComponent<Animal>().body.Torso, UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f));
@@ -205,18 +211,15 @@ public class Generation : MonoBehaviour
             o.GetComponent<Animal>().brain.mutated = false;
         }
         o.GetComponent<Animal>().age = 0;
-        o.GetComponent<Animal>().brain.nearestFood = Vector3.zero;
-        o.GetComponent<Animal>().brain.nearestWater = Vector3.zero;
-        o.GetComponent<Animal>().brain.lastFood = Vector3.zero;
-        o.GetComponent<Animal>().brain.lastWater = Vector3.zero;
 
         var z2 =o.GetComponent<Animal>().body;
 
         return o;
 
     }
-        private Brain Crossover(Brain brains1, Brain brains2)
-        {
+    private Brain Crossover(Brain brains1, Brain brains2, GameObject newAnimal)
+    {
+
         System.Random rand = new System.Random();
 
         var InnersActors = brains1.AllNeurons.Where(x => x.Value is Destination).ToList();
@@ -239,13 +242,13 @@ public class Generation : MonoBehaviour
                         index = brains1.Inners[UnityEngine.Random.Range(0, brains1.Inners.Length - 1)];
                         
                         brains1.Neurons.TryGetValue(index, out t);
-                        brains1.CreateConnection(t.Id, destAsNeuron.Id, newWeight);
+                        brains1.CreateConnection(t.GetId(), destAsNeuron.GetId(), newWeight);
                     }
                     else if (n.Value is InnerNeuron)
                     {
                         index = brains1.Sensors[UnityEngine.Random.Range(0, brains1.Sensors.Length - 1)];
                         brains1.Neurons.TryGetValue(index, out t);
-                        brains1.CreateConnection(t.Id, destAsNeuron.Id, newWeight);
+                        brains1.CreateConnection(t.GetId(), destAsNeuron.GetId(), newWeight);
                     }
                 }
                 catch (Exception e)
@@ -306,14 +309,14 @@ public class Generation : MonoBehaviour
                     if (rand.Next(2) == 0)
                     {
                         var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                        brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
+                        brains1.CreateConnection(key, destAsNeuron.GetId(), newWeight);
                     }
                 }
                 foreach (var key in dif1from2)
                 {
                     if (rand.Next(2) == 0)
                     {
-                        brains1.RemoveConnection(key, destAsNeuron.Id);
+                        brains1.RemoveConnection(key, destAsNeuron.GetId());
                     }
                 }
                 foreach (var key in inBoth)
@@ -323,8 +326,8 @@ public class Generation : MonoBehaviour
                         var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
                         var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
                         var newWeight = (w1 + w2) / 2f;
-                        brains1.RemoveConnection(key, destAsNeuron.Id);
-                        brains1.CreateConnection(key, destAsNeuron.Id, newWeight);
+                        brains1.RemoveConnection(key, destAsNeuron.GetId());
+                        brains1.CreateConnection(key, destAsNeuron.GetId(), newWeight);
                     }
                 }
 
@@ -343,7 +346,7 @@ public class Generation : MonoBehaviour
                 if (rand.Next(2) == 0)
                 {
                     Neuron destAsNeuron = (Neuron)n1;
-                    brains1.RemoveNeuron(destAsNeuron.Id);
+                    brains1.RemoveNeuron(destAsNeuron.GetId());
                 }
             }
         }
@@ -366,9 +369,8 @@ public class Generation : MonoBehaviour
         var newPrimary1 = new Color(Random.Range(primary1.r, primary2.r), Random.Range(primary1.g, primary2.g), Random.Range(primary1.b, primary2.b), Random.Range(primary1.a, primary2.a));
         var newSecondary1 = new Color(Random.Range(secondary1.r, secondary2.r), Random.Range(secondary1.g, secondary2.g), Random.Range(secondary1.b, secondary2.b), Random.Range(secondary1.a, secondary2.a));
         string name = body1.skeleton.name.Split(' ')[0] + " " + body2.skeleton.name.Split(' ')[1];
-        GameObject skeleton = Instantiate(body1.skeleton);
-        GameObject newAnimal = CreateAnimal(
-            skeleton,
+        GameObject newAnimal = CreateBredAnimal(
+            body1.skeleton,
             (body1.bodySize + body2.bodySize) / 2f,
             (body1.eyeSize + body2.eyeSize) / 2f,
             (body1.legSize + body2.legSize) / 2f,
@@ -396,7 +398,7 @@ public class Generation : MonoBehaviour
             var legSize = Random.Range(0.2f, 0.8f) ;
             var primaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
             var secondaryColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-            var newAnimal = CreateAnimal(engine.availableSkeletons[0], bodySize, eyeSize, legSize, primaryColor, secondaryColor, GeneEncoding.GenerateLatinName(),true);
+            var newAnimal = CreateDefaultAnimal(engine.availableSkeletons[0], bodySize, eyeSize, legSize, primaryColor, secondaryColor, GeneEncoding.GenerateLatinName(),true);
             
             currentPopulation.Add(newAnimal);
         }
@@ -455,11 +457,25 @@ public class Generation : MonoBehaviour
     }
 
 
-    public GameObject CreateAnimal(GameObject skeleton, float bodySize, float eyeSize, float legSize, Color primary, Color secondary, string name, bool display)
+    public GameObject CreateDefaultAnimal(GameObject skeleton, float bodySize, float eyeSize, float legSize, Color primary, Color secondary, string name, bool display)
     {
         GameObject bodySkeleton = Instantiate(skeleton);
         Body newAnimalBody = new Body(bodySkeleton, bodySize, eyeSize, legSize, primary, secondary,name);
         GameObject newAnimal = SpawnAnimal(bodySkeleton);
+        newAnimal.GetComponent<Animal>().InitializeAnimal();
+        newAnimal.GetComponent<Animal>().brain = (new Brain(newAnimal));
+        newAnimal.GetComponent<Animal>().brain.CreateNewConnections(SensorNeuron.sensorNeuronCount, engine.numberOfInnerNeurons);
+        newAnimal.GetComponent<Animal>().body = newAnimalBody;
+        if (display)
+            bodySkeleton.GetComponent<Animal>().body.DisplayName(bodySkeleton);
+        return newAnimal;
+    }
+    public GameObject CreateBredAnimal(GameObject skeleton, float bodySize, float eyeSize, float legSize, Color primary, Color secondary, string name, bool display)
+    {
+        GameObject bodySkeleton = Instantiate(skeleton);
+        Body newAnimalBody = new Body(bodySkeleton, bodySize, eyeSize, legSize, primary, secondary, name);
+        GameObject newAnimal = SpawnAnimal(bodySkeleton);
+        newAnimal.GetComponent<Animal>().InitializeAnimal();
         newAnimal.GetComponent<Animal>().body = newAnimalBody;
         if (display)
             bodySkeleton.GetComponent<Animal>().body.DisplayName(bodySkeleton);
@@ -470,26 +486,21 @@ public class Generation : MonoBehaviour
         //var rand = (int)Random.Range(0, engine.grassAreas.Count);
         //var area = engine.grassAreas.ElementAt(rand);
         //skeleton.transform.position = area.Tile.transform.position;
-        var x = (int)Random.Range(engine.mapSize/2-80, engine.mapSize/2+80);
-        var y = (int)Random.Range(engine.mapSize/2 - 80, engine.mapSize/2 + 80);
+        var xd = (int)Random.Range(-1, 2);
+        var yd = (int)Random.Range(-1,2);
+        int x = engine.mapSize / 2+xd;
+        int y = engine.mapSize / 2+yd-5;
+        int i = 0;
+        while (engine.sections[x, y].Type == AreaType.Water)
+        {
+            x = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 +i + xd);
+            y = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 + i + yd);
+        }
         skeleton.transform.position = new Vector3(x, 0, y);
         return skeleton;
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    IEnumerator  WaitForAllInactiveCoroutine(List<GameObject> elementsToCheck)
-    {
-        // Wait until all elements are inactive
-        while (!AreAllElementsInactive(elementsToCheck))
-        {
-            yield return null; // Wait for the next frame
-        }
 
-        // All elements are inactive, continue with your logic here
-        Debug.Log("All elements are inactive. Continuing...");
-
-
-        // Add your code to execute after all elements are inactive
-    }
 
     bool AreAllElementsInactive(List<GameObject> elementsToCheck)
     {

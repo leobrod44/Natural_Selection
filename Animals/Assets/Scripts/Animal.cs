@@ -22,11 +22,9 @@ public class Animal: MonoBehaviour
     //states
     [SerializeField]
     public float speed;
-    
-    public int baseEyeSight;
 
     public bool scouting;
-    public int fitness;
+    public float fitness;
     public GameObject currentBubble;
     public GameObject plantBubble;
     public GameObject drinkBubble;
@@ -41,7 +39,6 @@ public class Animal: MonoBehaviour
     public float currentWater;
     public float currentFood;
 
-    public int currentEyeSight;
     private bool canMove;
     private bool eating;
     private bool drinking;
@@ -79,15 +76,16 @@ public class Animal: MonoBehaviour
     public float scountTimer;     
 
     public float decisionRate = 1;
+    private Area lastFood;
+    private Area lastWater;
 
 
-    void Awake()
+
+    public void InitializeAnimal()
     {
-        brain = new Brain(gameObject);
         eating = false;
         drinking = false;
         engine = GameObject.Find("Engine").GetComponent<Engine>();
-        currentEyeSight = baseEyeSight;
         //PerformAction = DefaultMovement;
         try
         {
@@ -109,12 +107,6 @@ public class Animal: MonoBehaviour
         waterCount = 0;
         plantBubble.SetActive(false);
         drinkBubble.SetActive(false);
-
-        //interests = new List<Interests>();
-        //interests.Add(Interests.WaterF);
-        //interests.Add(Interests.WaterS);
-        //Debug.Log(brain.Neurons);
-
     }
     private void Update()
     {
@@ -161,14 +153,16 @@ public class Animal: MonoBehaviour
 
     IEnumerator Tick()
     {
-        if (age >= 150)
+        if (age >= 250)
         {
             Kill();
         }
         if (canMove)
         {
-            
+            //updates current position and area
             UpdatePosition();
+            //gives nearest food an nearest water
+            UpdateScan();
             ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
             if (neuronToFire != null)
             {
@@ -176,8 +170,6 @@ public class Animal: MonoBehaviour
                 Engine.actionSupposed++;
             }
         }
-  
-        decisionTimer = Time.time;
         currentWater -= engine.waterDepletionConstant;
         currentFood -= engine.foodDepletionConstant;
         age += 1;
@@ -186,6 +178,139 @@ public class Animal: MonoBehaviour
         
       
     }
+    public void UpdateScan()
+    {
+        //n^2 loop for nearby objects
+        var initialPosX = (int)transform.position.x;
+        var initialPosY = (int)transform.position.z;
+        int range= 1;
+        bool foodFound = false;
+        bool waterFound = false;
+        //top row
+        while (true)
+        {
+
+            for (int i = 1; i <= range; i++)
+            {
+                var a1 = initialPosX + i; //    -1,1   0,1    1 1
+                var a2 = initialPosX - i; //    -1,1   0,1    1 1
+                var b1 = initialPosY + range;// -1,0   0,0    1,0  
+                var b2 = initialPosY - range;//     -1 -1  0,-1   1,-1
+
+                var c1 = initialPosY + i - 1;//-1 0 1
+                var c2 = initialPosY - i - 1;//-1 0 1
+                var d1 = initialPosX + range;//1
+                var d2 = initialPosX - range;//-1
+
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(a1, b1);
+                }
+                if(!waterFound)
+                {
+                    waterFound = TestWaterArea(a1, b1);
+                }
+                
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(a2, b1);
+                }
+                if(!waterFound)
+                {
+                    waterFound = TestWaterArea(a2, b1);
+                }
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(a1, b2);
+                }
+                if (!waterFound)
+                {
+                    waterFound = TestWaterArea(a1, b2);
+                }
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(a2, b2);
+                }
+                if (!waterFound)
+                {
+                    waterFound = TestWaterArea(a2, b2);
+                }
+
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(d1, c1);
+                }
+                if(!waterFound)
+                {
+                    waterFound = TestWaterArea(d1, c1);
+                }
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(d2, c1);
+                }
+                if (!waterFound)
+                {
+                    waterFound = TestWaterArea(d2, c1);
+                }
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(d1, c2);
+                }
+                if (!waterFound)
+                {
+                    waterFound = TestWaterArea(d1, c2);
+                }
+                if (!foodFound)
+                {
+                    foodFound = TestFoodArea(d2, c2);
+                }
+                if (!waterFound)
+                {
+                    waterFound = TestWaterArea(d2, c2);
+                }
+                if (foodFound && waterFound)
+                {
+                    break;
+                }
+            }
+            if (foodFound && waterFound || range > 200)
+            {
+                break;
+            }
+            range += 1;
+        }
+
+    }
+    private bool TestWaterArea(int x, int z)
+    {
+        if (x < 0 || x >= engine.mapSize || z < 0 || z >= engine.mapSize)
+        {
+            return false;
+        }
+        if (engine.sections[x, z].Type == AreaType.Drinkable)
+        {
+            brain.nearestWater = new Vector3(x, 0, z);
+            return true;
+
+        }
+        return false;
+    }
+    private bool TestFoodArea(int x, int z)
+    {
+        if (x< 0 || x >= engine.mapSize || z < 0 || z >= engine.mapSize)
+        {
+            return false;
+        }   
+        if (engine.sections[x, z].Type == AreaType.Food && engine.sections[x,z].Element.activeInHierarchy)
+        {
+            brain.nearestFood = new Vector3(x, 0, z);
+            return true;
+
+        }
+        return false;
+    }
+
+
     private void CheckDeath()
     {
         if (currentFood <= 0 || currentWater <= 0)
@@ -196,10 +321,6 @@ public class Animal: MonoBehaviour
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void Kill()
     {
-        if (age > 25)
-        {
-            Debug.Log("ate and drank");
-        }
         gameObject.SetActive(false);
         Generation.currentPopulationSize--;
     }
@@ -207,33 +328,72 @@ public class Animal: MonoBehaviour
     [MethodImpl(MethodImplOptions.Synchronized)]
     private void UpdatePosition()
     {
-        int currentPosx = (int)transform.position.x;
-        int currentPosy = (int)transform.position.z;
-        if(currentPosx!=currentPosition.Item1 || currentPosy != currentPosition.Item2)
-        {
-            currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
-            area = engine.sections[currentPosx, currentPosy];
-
-            //refreshes tiles once moved
-            if (area.Tile != currentArea.Tile)
+        try 
+        { 
+            int currentPosx = (int)transform.position.x;
+            int currentPosy = (int)transform.position.z;
+            if(currentPosx!=currentPosition.Item1 || currentPosy != currentPosition.Item2)
             {
-                currentArea = area;
+                currentPosition = new Tuple<int, int>(currentPosx, currentPosy);
+                area = engine.sections[currentPosx, currentPosy];
+
+                //refreshes tiles once moved
+                if (area.Tile != currentArea.Tile)
+                {
+                    currentArea = area;
+                    if(eatTimer>=0)
+                    {
+                        eatTimer -= 1;
+                    }
+                    else
+                    {
+                        if (currentArea.Type == AreaType.Food && currentArea != lastFood)
+                        {
+                            Eat();
+                        }
+                    }
+                    if(drinkTimer>=0)
+                    {
+                        drinkTimer -= 1;
+                    }
+                    else
+                    {
+                        if (currentArea.Type == AreaType.Drinkable && currentArea!=lastWater)
+                        {
+                            Drink();
+                        }
+                    }
+                }
             }
+        }
+        catch
+        {
+            Kill();
         }
     }
     public void Eat()
     {
         try
         {
-            UpdatePosition();
+            //UpdatePosition();
             if (currentArea.Element.activeInHierarchy)
             {
                 currentArea.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.red; // Set element color to white
                 currentArea.Element.SetActive(false);
+                currentFood = maxFood;
+                eatTimer = Engine.numEatTicks;
+                Debug.Log("ate");
+                foodCount++;
             }
-            currentFood = maxFood;
-            Debug.Log("ate");
-            foodCount++;
+            else
+            {
+                currentFood = maxFood;
+                foodCount++;
+                eatTimer = Engine.numEatTicks;
+                Debug.Log("food already eaten");
+            }
+            lastFood = currentArea;
+            
         }
         catch(Exception e)
         {
@@ -247,8 +407,10 @@ public class Animal: MonoBehaviour
     {
         currentWater = maxWater;
         Engine.drinkCountDone++;
+        drinkTimer = Engine.numDrinkTicks;
         waterCount++;
         Debug.Log("drank");
+        lastWater = currentArea;
         //StartCoroutine(StopInPlace(engine.drinkTime));
         //StartCoroutine(ResetWater(5));
     }
