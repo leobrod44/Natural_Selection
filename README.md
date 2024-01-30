@@ -1,7 +1,21 @@
 # Natural Selection Simulator with Genetic Algorithms
 
 ## Summary
-Procedurally generated biomes and creatures controlled by neural networks for real-time sensor/action decision making. Use of Genetic Algorithms for creatures to learn to adapt to their environment by gene reproduction.
+Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms, an alternative to backpropagation in reinforcement learning to have creatures adapt to their environment through selective reproduction.
+
+This simulation uses the Unity game engine but bypasses all physics engines for movement and collision detections to instead rely solely on local CPU processing power and RAM to maximize training throughput. 
+
+
+## Example
+https://github.com/leobrod44/ML_Natural_Selection_Simulator/assets/65002959/0d699697-43cf-4dc6-a3bc-0b1fed275fc9
+
+
+| This interaction . | <img src="https://github.com/leobrod44/ML_Natural_Selection_Simulator/assets/65002959/80459365-77ae-4e86-99d4-c0633f754535" width="2800"> |
+| --- | --- |
+
+
+
+
 ## Biome generation
 
 ### Natural habitat generation
