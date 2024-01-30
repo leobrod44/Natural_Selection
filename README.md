@@ -3,6 +3,8 @@
 ## Summary
 Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms, an alternative to backpropagation in reinforcement learning to have creatures adapt to their environment through selective reproduction.
 
+This simulation uses the Unity game engine but bypasses all physics engines for movement and collision detections to instead rely solely on local CPU processing power and RAM to maximize training throughput. 
+
 
 ## Example
 https://github.com/leobrod44/ML_Natural_Selection_Simulator/assets/65002959/0d699697-43cf-4dc6-a3bc-0b1fed275fc9
