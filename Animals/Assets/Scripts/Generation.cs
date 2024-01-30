@@ -7,6 +7,7 @@ using Random = UnityEngine.Random;
 using static System.Collections.Specialized.BitVector32;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using static UnityEngine.GraphicsBuffer;
 
 public class Generation : MonoBehaviour
 {
@@ -84,7 +85,8 @@ public class Generation : MonoBehaviour
                 
                 originalPopulation = currentPopulation;
                 itteration = 1;
-                
+                //engine.ClearAndReset();
+
             }
             else
             {
@@ -426,6 +428,7 @@ public class Generation : MonoBehaviour
         }
         List<Animal> activeAndInactive2 = GameObject.FindObjectsOfType<Animal>(true).ToList();
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void ResetMap()
     {
         foreach (var area in engine.foodAreas)
@@ -433,8 +436,10 @@ public class Generation : MonoBehaviour
             area.Element.SetActive(true);
             area.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.green;
         }
+        engine.targeted = new int[Engine.MAPSIZE,Engine.MAPSIZE];
+
         //Clean();
-        
+
     }
 
     public void GenerateNewPopulation(List<GameObject> pop)
@@ -486,16 +491,18 @@ public class Generation : MonoBehaviour
         //var rand = (int)Random.Range(0, engine.grassAreas.Count);
         //var area = engine.grassAreas.ElementAt(rand);
         //skeleton.transform.position = area.Tile.transform.position;
-        var xd = (int)Random.Range(-1, 2);
-        var yd = (int)Random.Range(-1,2);
-        int x = engine.mapSize / 2+xd;
-        int y = engine.mapSize / 2+yd-5;
-        int i = 0;
-        while (engine.sections[x, y].Type == AreaType.Water)
-        {
-            x = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 +i + xd);
-            y = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 + i + yd);
-        }
+        //var xd = (int)Random.Range(-1, 2);
+        //var yd = (int)Random.Range(-1,2);
+        //int x = engine.mapSize / 2+xd;
+        //int y = engine.mapSize / 2+yd-5;
+        //int i = 0;
+        //while (engine.sections[x, y].Type == AreaType.Water)
+        //{
+        //    x = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 +i + xd);
+        //    y = (int)Random.Range(engine.mapSize / 2 +i, engine.mapSize / 2 + i + yd);
+        //}
+        var x = (int)Random.Range(15, engine.mapSize-15);
+        var y = (int)Random.Range(15, engine.mapSize - 15);
         skeleton.transform.position = new Vector3(x, 0, y);
         return skeleton;
     }

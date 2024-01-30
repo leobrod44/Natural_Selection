@@ -16,6 +16,7 @@ public class Animal: MonoBehaviour
     //temp
     private float nextMovementTime;
     private float time;
+    public int baseEyesight;
 
     private GameObject Target;
 
@@ -38,6 +39,7 @@ public class Animal: MonoBehaviour
 
     public float currentWater;
     public float currentFood;
+    public int currentEyesight;
 
     private bool canMove;
     private bool eating;
@@ -98,6 +100,7 @@ public class Animal: MonoBehaviour
         }
         currentFood = maxFood;
         currentWater = maxWater;
+        baseEyesight = Engine.baseEyesight;
         scountTimer = 0;
         eatTimer = 0;
         drinkTimer = 0;
@@ -153,7 +156,7 @@ public class Animal: MonoBehaviour
 
     IEnumerator Tick()
     {
-        if (age >= 250)
+        if (age >= 200)
         {
             Kill();
         }
@@ -161,17 +164,27 @@ public class Animal: MonoBehaviour
         {
             //updates current position and area
             UpdatePosition();
+            //CheckActions();
             //gives nearest food an nearest water
             UpdateScan();
             ActionNeuron neuronToFire = brain.GetScenarioActionNeuron();
             if (neuronToFire != null)
             {
                 neuronToFire.DoAction();
-                Engine.actionSupposed++;
+                //UpdatePosition();
             }
         }
         currentWater -= engine.waterDepletionConstant;
         currentFood -= engine.foodDepletionConstant;
+        if (eatTimer >= 0)
+        {
+            eatTimer -= 1;
+        }
+        if (drinkTimer >= 0)
+        {
+            drinkTimer -= 1;
+        }
+
         age += 1;
         CheckDeath();
         yield return null;
@@ -295,15 +308,18 @@ public class Animal: MonoBehaviour
         }
         return false;
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     private bool TestFoodArea(int x, int z)
     {
-        if (x< 0 || x >= engine.mapSize || z < 0 || z >= engine.mapSize)
+        if (x< 0 || x >= engine.mapSize || z < 0 || z >= engine.mapSize || engine.targeted[x,z]==1)
         {
             return false;
         }   
         if (engine.sections[x, z].Type == AreaType.Food && engine.sections[x,z].Element.activeInHierarchy)
         {
+            engine.targeted[(int)brain.nearestFood.x, (int)brain.nearestFood.z] = 0;
             brain.nearestFood = new Vector3(x, 0, z);
+            engine.targeted[x, z] = 1;
             return true;
 
         }
@@ -325,8 +341,8 @@ public class Animal: MonoBehaviour
         Generation.currentPopulationSize--;
     }
 
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void UpdatePosition()
+    
+    public void UpdatePosition()
     {
         try 
         { 
@@ -341,28 +357,6 @@ public class Animal: MonoBehaviour
                 if (area.Tile != currentArea.Tile)
                 {
                     currentArea = area;
-                    if(eatTimer>=0)
-                    {
-                        eatTimer -= 1;
-                    }
-                    else
-                    {
-                        if (currentArea.Type == AreaType.Food && currentArea != lastFood)
-                        {
-                            Eat();
-                        }
-                    }
-                    if(drinkTimer>=0)
-                    {
-                        drinkTimer -= 1;
-                    }
-                    else
-                    {
-                        if (currentArea.Type == AreaType.Drinkable && currentArea!=lastWater)
-                        {
-                            Drink();
-                        }
-                    }
                 }
             }
         }
@@ -371,6 +365,22 @@ public class Animal: MonoBehaviour
             Kill();
         }
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public void CheckActions()
+    {
+        if (area.Tile == currentArea.Tile)
+        {
+            if (eatTimer<=0 && currentArea.Type == AreaType.Food && currentArea != lastFood)
+            {
+                Eat();
+            }
+            if (drinkTimer<=0 && currentArea.Type == AreaType.Drinkable && currentArea != lastWater)
+            {
+                Drink();
+            }
+        }
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void Eat()
     {
         try
@@ -379,6 +389,8 @@ public class Animal: MonoBehaviour
             if (currentArea.Element.activeInHierarchy)
             {
                 currentArea.Element.transform.parent.gameObject.GetComponent<Renderer>().material.color = Color.red; // Set element color to white
+                engine.deactivatedFood.Add(currentArea);
+                engine.deactivatedTimer.Add(engine.foodRespawn);
                 currentArea.Element.SetActive(false);
                 currentFood = maxFood;
                 eatTimer = Engine.numEatTicks;
@@ -390,7 +402,7 @@ public class Animal: MonoBehaviour
                 currentFood = maxFood;
                 foodCount++;
                 eatTimer = Engine.numEatTicks;
-                Debug.Log("food already eaten");
+                Debug.Log("pas supposer");
             }
             lastFood = currentArea;
             
@@ -402,7 +414,7 @@ public class Animal: MonoBehaviour
         }
 
     }
-
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void Drink()
     {
         currentWater = maxWater;

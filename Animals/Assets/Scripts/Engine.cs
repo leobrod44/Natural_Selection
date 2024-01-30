@@ -22,6 +22,8 @@ public class Engine : MonoBehaviour
     public List<Area> foodAreas;
     public List<Area> waterAreas;
     public List<Area> grassAreas;
+    public List<Area> deactivatedFood;
+    public List<int> deactivatedTimer;
     public int totalElements;
     public Severity density;
     public Severity grassRate;
@@ -36,6 +38,9 @@ public class Engine : MonoBehaviour
     public static int drinkCountDone;
     public static int actionSupposed;
     public static int actionDone;
+    public static int baseEyesight;
+    public int[,] targeted;
+    
 
     #region Nature Accessers
 
@@ -62,6 +67,7 @@ public class Engine : MonoBehaviour
     public float waterDepletionConstant;
     public float foodDepletionConstant;
     public float eatTicks;
+    public int foodRespawn;
     public float drinkTicks;
     public float scoutTicks;
     public static int numEatTicks;
@@ -69,6 +75,7 @@ public class Engine : MonoBehaviour
     public static int numScoutTicks;
     public Tuple<int, int> eyeSightRange;
     
+
 
     [Header("Context parameters")]
 
@@ -78,15 +85,21 @@ public class Engine : MonoBehaviour
     void Awake()
     {
         Initialize();
-        numEatTicks = (int)eatTicks;
-        numDrinkTicks = (int)drinkTicks;
-        numScoutTicks = (int)scoutTicks;
-        Time.timeScale = timeScale;
+
     }
     void Start()
     {
-        Camera cam = Camera.main;
+
         //cam.transform.position = new Vector3(MAPSIZE / 2f, cam.transform.position.y,cam.transform.position.z);
+    }
+    public void ClearAndReset()
+    {
+        GameObject ground = GameObject.Find("Ground");
+        for (int i = 0; i < ground.transform.childCount; i++)
+        {
+            Destroy(ground.transform.GetChild(i).gameObject);
+        }
+        Initialize();
     }
     public void Initialize()
     {
@@ -95,6 +108,28 @@ public class Engine : MonoBehaviour
         sections = new Area[mapSize, mapSize];
         LoadNatureElements();
         CreateSections(numberOfPuddles);
+        numEatTicks = (int)eatTicks;
+        numDrinkTicks = (int)drinkTicks;
+        numScoutTicks = (int)scoutTicks;
+        Time.timeScale = timeScale;
+        deactivatedFood = new List<Area>();
+        deactivatedTimer = new List<int>();
+        targeted = new int[MAPSIZE, MAPSIZE];
+        Camera cam = Camera.main;
+    }
+    private void Update()
+    {
+        deactivatedTimer = deactivatedTimer.Select(x => x - 1).ToList();
+        for (int i = 0; i < deactivatedTimer.Count; i++)
+        {
+            if (deactivatedTimer[i] <= 0)
+            {
+                deactivatedFood[i].Element.SetActive(true);
+                deactivatedFood.RemoveAt(i);
+                deactivatedTimer.RemoveAt(i);
+            }
+        }
+
     }
 
 
@@ -137,11 +172,11 @@ public class Engine : MonoBehaviour
             var puddleThickness = UnityEngine.Random.Range(puddleSeed / 2, puddleSeed);
             puddleSourceX = UnityEngine.Random.Range(0, mapSize);
             puddleSourceY = UnityEngine.Random.Range(0, mapSize);
-            while (puddleSourceX<= Engine.MAPSIZE/2+10 && puddleSourceX>= Engine.MAPSIZE/2 - 10)
+            while (puddleSourceX<= Engine.MAPSIZE/2+1 && puddleSourceX>= Engine.MAPSIZE/2 - 1)
             {
                 puddleSourceX = UnityEngine.Random.Range(0, mapSize);
             }
-            while (puddleSourceY <= Engine.MAPSIZE / 2 + 10 && puddleSourceY >= Engine.MAPSIZE/2 - 10)
+            while (puddleSourceY <= Engine.MAPSIZE / 2 + 1 && puddleSourceY >= Engine.MAPSIZE/2 - 1)
             {
                 puddleSourceY = UnityEngine.Random.Range(0, mapSize);
             }

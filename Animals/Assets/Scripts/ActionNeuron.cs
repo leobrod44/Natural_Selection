@@ -36,6 +36,7 @@ public abstract class ActionNeuron: Neuron, Destination
             }
         }
     }
+    public abstract float GiveValue();
     public void RemoveWeight(int sourceId)
     {
         foreach (var weight in m_weights)
@@ -95,6 +96,10 @@ public class MoveUp : ActionNeuron
         parent.transform.rotation = Quaternion.Euler(0, 0, 0);
 
     }
+    public override float GiveValue()
+    {
+        return 0;
+    }
 
 }
 
@@ -111,6 +116,10 @@ public class MoveDown : ActionNeuron
         var z = parent.transform.position.z - 1;
         parent.transform.position = new Vector3(x, 0, z);
         parent.transform.rotation = Quaternion.Euler(0, 180, 0);
+    }
+    public override float GiveValue()
+    {
+        return 0;
     }
 }
 
@@ -129,6 +138,10 @@ public class MoveLeft : ActionNeuron
         parent.transform.position = new Vector3(x, 0, z);
         parent.transform.rotation = Quaternion.Euler(0, -90, 0);
     }
+    public override float GiveValue()
+    {
+        return 0;
+    }
 }
 public class MoveRight : ActionNeuron
 {
@@ -144,8 +157,57 @@ public class MoveRight : ActionNeuron
         parent.transform.position = new Vector3(x, 0, z);
         parent.transform.rotation = Quaternion.Euler(0, 90, 0);
     }
+    public override float GiveValue()
+    {
+        return 0;
+    }
 }
+public class MoveX : ActionNeuron
+{
 
+    public MoveX(GameObject parent) : base(parent)
+    {
+    }
+
+    public override void DoAction()
+    {
+        var x = parent.transform.position.x + 1;
+        var z = parent.transform.position.z;
+        parent.transform.position = new Vector3(x, 0, z);
+        parent.transform.rotation = Quaternion.Euler(0, 90, 0);
+    }
+    public override float GiveValue()
+    {
+        //var tot;
+        //foreach (var weight in GetWeights())
+        //{
+        //    tot+=weight.Item2;
+        //}
+        //var activatedValue = (float)Math.Tanh(sum + ((Destination)n).GetBias());
+        //destinationNeuron.SetActivatedValue(activatedValue);
+        //TODO change way computer, negled action itself and do in brain
+        return 0;
+    }
+}
+public class MoveY : ActionNeuron
+{
+
+    public MoveY(GameObject parent) : base(parent)
+    {
+    }
+
+    public override void DoAction()
+    {
+        var x = parent.transform.position.x + 1;
+        var z = parent.transform.position.z;
+        parent.transform.position = new Vector3(x, 0, z);
+        parent.transform.rotation = Quaternion.Euler(0, 90, 0);
+    }
+    public override float GiveValue()
+    {
+        return 0;
+    }
+}
 //public class TurnAroundAction : ActionNeuron
 //{
 //    private const int id = 11;
@@ -174,90 +236,100 @@ public class MoveRight : ActionNeuron
 
 //    public override void DoAction()
 //    {
-        
-//    }
-//}
-//public class TargetFood : ActionNeuron
-//{
-//    private  int id = lastInputNeuron + 1;
-
-//    public TargetFood(GameObject parent) : base(parent)
-//    {
-//        animal = parent.GetComponent<Animal>();
-//        Id = id;
-       
-//    }
-
-//    public override void DoAction() { 
-
-//        Vector3 foodDirection =brain.nearestFood- parent.transform.position;
-//        Quaternion foodRotation = Quaternion.LookRotation(foodDirection);
-//        parent.transform.rotation = foodRotation;
-//        if (brain.nearestFood != Vector3.zero & animal.MoveCloser(brain.nearestFood))
-//        {
-//            animal.Eat();
-//            animal.eatTimer = Engine.numEatTicks;
-//            animal.currentEyeSight = animal.baseEyeSight;
-//        }
-//    }
-//}
-
-//public class TargetWater : ActionNeuron
-//{
-//    private int id = (lastInputNeuron + 2);
-//    public TargetWater(GameObject parent) : base(parent)
-//    {
-//        animal = parent.GetComponent<Animal>();
-//        Id = id;
-
-//    }
-//    public override void DoAction()
-//    {
-//        Vector3 waterDirection = brain.nearestWater - parent.transform.position;
-//        Quaternion waterRotation = Quaternion.LookRotation(waterDirection);
-//        parent.transform.rotation = waterRotation;
-//        if (brain.nearestWater != Vector3.zero & animal.MoveCloser(brain.nearestWater))
-//        {
-//            animal.Drink();
-//            animal.drinkTimer = Engine.numDrinkTicks;
-//            animal.currentEyeSight= animal.baseEyeSight;
-//        }
-//    } 
-//}
-//public class RotateRandomAction : ActionNeuron
-//{
-//    private int id = lastInputNeuron + 4;
-//    public RotateRandomAction(GameObject parent) : base(parent)
-//    {
-//        animal = parent.GetComponent<Animal>();
-//        Id = id;
-//    }
-
-//    public override void DoAction()
-//    {
-//        var randX = UnityEngine.Random.Range(-1, 2);
-//        var randY = UnityEngine.Random.Range(-1, 2);
-//        Vector3 pos = parent.transform.position;
-//        parent.transform.position = new Vector3(pos.x + randX, 0, pos.z + randY);
-
 
 //    }
 //}
-//    public class Scout : ActionNeuron
-//    {
-//        private int id = lastInputNeuron + 3;
-//        public Scout(GameObject parent) : base(parent)
-//        {
-//            animal = parent.GetComponent<Animal>();
-//            Id = id;
-//        }
+public class TargetFood : ActionNeuron
+{ 
 
-//        public override void DoAction()
-//        {
-//            animal.scountTimer = Engine.numScoutTicks;
-//            animal.currentEyeSight = animal.baseEyeSight* 3;
-//        }
-//    }
+    public TargetFood(GameObject parent) : base(parent)
+    {
+
+    }
+
+    public override void DoAction() { 
+
+        Vector3 foodDirection =brain.nearestFood- parent.transform.position;
+        Quaternion foodRotation = Quaternion.LookRotation(foodDirection);
+        parent.transform.rotation = foodRotation;
+        if (brain.nearestFood != Vector3.zero & animal.MoveCloser(brain.nearestFood))
+        {
+            animal.UpdatePosition();
+            animal.CheckActions();
+            animal.eatTimer = Engine.numEatTicks;
+            animal.currentEyesight = animal.baseEyesight;
+            Debug.Log("Should eat");
+       }
+    }
+    public override float GiveValue()
+    {
+        return 0;
+    }
+}
+
+public class TargetWater : ActionNeuron
+{
+    public TargetWater(GameObject parent) : base(parent)
+    {
+
+    }
+    public override void DoAction()
+    {
+        Vector3 waterDirection = brain.nearestWater - parent.transform.position;
+        Quaternion waterRotation = Quaternion.LookRotation(waterDirection);
+        parent.transform.rotation = waterRotation;
+        if (brain.nearestWater != Vector3.zero & animal.MoveCloser(brain.nearestWater))
+        {
+            animal.UpdatePosition();
+            animal.CheckActions();
+            animal.drinkTimer = Engine.numDrinkTicks;
+            animal.currentEyesight = animal.baseEyesight;
+            Debug.Log("should drink");
+        }
+    }
+    public override float GiveValue()
+    {
+        return 0;
+    }
+}
+
+public class RotateRandomAction : ActionNeuron
+{
+    public RotateRandomAction(GameObject parent) : base(parent)
+    {
+    }
+
+    public override void DoAction()
+    {
+        int randX = UnityEngine.Random.Range(-2, 3);
+        int randY = UnityEngine.Random.Range(-2, 3);
+        Vector3 pos = parent.transform.position;
+        parent.transform.rotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
+        parent.transform.position = new Vector3(pos.x + randX, 0, pos.z + randY);
+
+
+    }
+    public override float GiveValue()
+    {
+        return 0;
+    }
+}
+public class Scout : ActionNeuron
+{
+    public Scout(GameObject parent) : base(parent)
+    {
+    }
+
+    public override void DoAction()
+    {
+        animal.scountTimer = Engine.numScoutTicks;
+        animal.currentEyesight = animal.baseEyesight * 3;
+    }
+    public override float GiveValue()
+    {
+        return 0;
+    }
+}
 
 
 //public class Breed : ActionNeuron

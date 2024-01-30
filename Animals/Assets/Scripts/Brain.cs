@@ -54,10 +54,14 @@ public class Brain
             new WaterDistanceZ(parent),
             new FoodDistanceX(parent),
             new FoodDistanceZ(parent),
-            new MoveUp(parent),
-            new MoveDown(parent),
-            new MoveLeft(parent),
-            new MoveRight(parent),
+            new TargetFood(parent),
+            new TargetWater(parent),
+            new RotateRandomAction(parent),
+
+            //new MoveUp(parent),
+            //new MoveDown(parent),
+            //new MoveLeft(parent),
+            //new MoveRight(parent),
         };
         AllNeurons = new Dictionary<int, Neuron>();
         foreach (var n in neuronsToAdd)
