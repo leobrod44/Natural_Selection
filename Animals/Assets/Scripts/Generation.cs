@@ -131,7 +131,8 @@ public class Generation : MonoBehaviour
             foreach (var animal in population)
             {
                 var a = animal.GetComponent<Animal>();
-                total += (float)a.age * engine.ageFactor + (float)a.foodCount * engine.foodFactor + (float)a.waterCount * engine.waterFactor;
+                total+= (a.age - 100 / Math.Min(engine.foodDepletionConstant, engine.waterDepletionConstant)) * engine.ageFactor + a.foodCount * engine.foodFactor + a.waterCount * engine.waterFactor;
+            
             }
             return (float)total / (float)population.Count;
         }
@@ -152,7 +153,7 @@ public class Generation : MonoBehaviour
         foreach(var animal in population)
         {
             var a = animal.GetComponent<Animal>();
-            animal.GetComponent<Animal>().fitness = a.age* engine.ageFactor+a.foodCount*engine.foodFactor+a.waterCount* engine.waterFactor;
+            animal.GetComponent<Animal>().fitness = (a.age - 100/Math.Min(engine.foodDepletionConstant,engine.waterDepletionConstant)) * engine.ageFactor+a.foodCount*engine.foodFactor+a.waterCount* engine.waterFactor;
         }
         //int maxNum = percentage <= population.Count ? percentage: population.Count ;
         List<GameObject> ageOrdered = population.OrderBy(x => x.GetComponent<Animal>().fitness).Reverse().ToList();

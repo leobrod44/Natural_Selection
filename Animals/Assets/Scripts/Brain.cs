@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 public class Brain
 {
@@ -50,10 +51,8 @@ public class Brain
         {
             new WaterLevelSensor(parent),
             new FoodLevelSensor(parent),
-            new WaterDistanceX(parent),
-            new WaterDistanceZ(parent),
-            new FoodDistanceX(parent),
-            new FoodDistanceZ(parent),
+            new WaterDistance(parent),
+            new FoodDistance(parent),
             new TargetFood(parent),
             new TargetWater(parent),
             new RotateRandomAction(parent),
@@ -113,6 +112,7 @@ public class Brain
         }
         var innerActors = usedInternals.Union(usedActors);
 
+        //set biases
         foreach (var Id in innerActors)
         {
             Neuron n = null;
@@ -132,9 +132,13 @@ public class Brain
         foreach (int id in usedSensors)
         {
             // Select a random amount of elements from the usedInternals set
-            int numElements = UnityEngine.Random.Range(Neuron.lastInputNeuron, innerActors.Count()+1);
-            HashSet<int> selectedElements = new HashSet<int>(innerActors.OrderBy(x => UnityEngine.Random.value).Take(numElements));
-            foreach(int id2 in selectedElements)
+
+            HashSet<int> firstLayer = usedInternals.Take(engine.numberOfInnerNeurons).ToHashSet();
+
+            //int numElements = firstLayer.Count();
+
+            //HashSet<int> selectedElements = new HashSet<int>(firstLayer.OrderBy(x => UnityEngine.Random.value).Take(numElements));
+            foreach(int id2 in firstLayer)
             {
                 var weight = UnityEngine.Random.Range(-engine.weightLimit, engine.weightLimit);
                 weight = weight == 0f ? 0.01f : weight;
@@ -143,11 +147,30 @@ public class Brain
             }
         }
         //create inner neuron connections
-        foreach (int id in usedInternals)
+        int prev = 0;
+        int offset = engine.numberOfInnerNeurons;
+        for (int i = 0; i < engine.numberOfInnerLayers-1; i++)
         {
-            int numElements = UnityEngine.Random.Range(0, usedActors.Count+1);
-            HashSet<int> selectedElements = new HashSet<int>(usedActors.OrderBy(x => UnityEngine.Random.value).Take(numElements));
-            foreach (int id2 in selectedElements)
+            for (int j = 0; j < engine.numberOfInnerNeurons; j++)
+            {
+                HashSet<int> layers = usedInternals.Skip(offset).Take(engine.numberOfInnerNeurons).ToHashSet();
+                foreach (int id2 in layers)
+                {
+                    var weight = UnityEngine.Random.Range(-engine.weightLimit, engine.weightLimit);
+                    weight = weight == 0f ? 0.01f : weight;
+                    var id = usedInternals.ElementAt(prev+j);
+                    string connection = CreateConnection(id, id2, weight);
+                    InnerConnections.Add(connection);
+                }
+            }
+            prev+= engine.numberOfInnerNeurons;
+            offset += engine.numberOfInnerNeurons;
+        }
+
+        HashSet<int> lastLayer = usedInternals.TakeLast(engine.numberOfInnerNeurons).ToHashSet();
+        foreach (int id in lastLayer)
+        {
+            foreach(int id2 in usedActors)
             {
                 var weight = UnityEngine.Random.Range(-engine.weightLimit, engine.weightLimit);
                 weight = weight == 0f ? 0.01f : weight;
@@ -155,9 +178,6 @@ public class Brain
                 InnerConnections.Add(connection);
             }
         }
-
-        //store neuron iDs
-        
         Inners = usedInternals.ToArray();
 
     }
@@ -180,126 +200,229 @@ public class Brain
             AllNeurons.TryGetValue(Id, out n);
             Neurons.Add(Id, n);
         }
-        foreach (var n in InnersActorsKeys)
+        //foreach (var n in InnersActorsKeys)
+        //{
+        //    //try mutation
+        //    var mutate = UnityEngine.Random.Range(0f, 100f);
+        //    if (mutate <= mutationPercentage)
+        //    {
+        //        var newWeight = UnityEngine.Random.Range(-4f, 4f);
+        //        var bias = UnityEngine.Random.Range(-1f, 1f);
+        //        try
+        //        {
+        //            if (Actors.Contains(n))
+        //            {
+        //                var index = brain1.Inners[UnityEngine.Random.Range(0, Inners.Length - 1)];
+        //                AddToMerge(index, n, newWeight, brain1);
+        //            }
+        //            else if (Inners.Contains(n))
+        //            {
+        //                var index = Sensors[UnityEngine.Random.Range(0, Inners.Length - 1)];
+        //                AddToMerge(index, n, newWeight, brain1);
+        //            }
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            Debug.Log(e.Message);
+        //            Application.Quit();
+        //        }
+
+        //        this.mutated = true;
+        //        continue;
+        //    }
+        //    Destination n1 = null;
+        //    Destination n2 = null;
+        //    if (brain1.Neurons.ContainsKey(n))
+        //    {
+        //        Neuron t;
+        //        brain1.Neurons.TryGetValue(n, out t);
+        //        n1 = (Destination)t;
+        //    }
+        //    if (brain2.Neurons.ContainsKey(n))
+        //    {
+        //        Neuron t;
+        //        brain2.Neurons.TryGetValue(n, out t);
+        //        n2 = (Destination)t;
+
+        //    }
+        //    if (n1 == null && n2 == null)
+        //    {
+        //        continue;
+        //    }
+        //    //TODO mutate
+        //    if (n1 != null && n2 != null)
+        //    {
+        //        //swap biases
+        //        if (rand.Next(2) == 0)
+        //        {
+        //            var b2 = n2.GetBias();
+        //            n1.SetBias((n1.GetBias() + b2) / 2f);
+        //        }
+
+        //        var kv1 = n1.GetWeights();
+        //        var kv2 = n2.GetWeights();
+
+        //        var keys1 = kv1.Select(x => x.Item1).ToList();
+        //        var keys2 = kv2.Select(x => x.Item1).ToList();
+
+        //        //in 2 not in 1
+        //        var dif2from1 = keys1.Except(keys2).ToList();
+        //        //in 1 not in 2
+        //        var dif1from2 = keys2.Except(keys1).ToList();
+        //        //in both
+        //        var inBoth = keys1.Intersect(keys2).ToList();
+
+        //        var destAsNeuron = (Neuron)n1;
+
+        //        foreach (var key in dif2from1)
+        //        {
+        //            if (rand.Next(2) == 0)
+        //            {
+        //                var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+
+        //                AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
+
+        //            }
+        //        }
+        //        foreach (var key in dif1from2)
+        //        {
+        //            if (rand.Next(2) == 0)
+        //            {
+        //                var newWeight = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+        //                AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
+        //            }
+        //        }
+        //        foreach (var key in inBoth)
+        //        {
+        //            if (rand.Next(2) == 0)
+        //            {
+        //                var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+        //                var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
+        //                var newWeight = (w1 + w2) / 2f;
+        //                AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
+        //            }
+        //        }
+        //    }
+        //    else if (n1 != null && n2 == null)
+        //    {
+        //        //maybe take other brain's neuron
+        //        if (rand.Next(2) == 0)
+        //        {
+        //            this.AddNeuron((Neuron)n1);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (rand.Next(2) == 0)
+        //        {
+        //            this.AddNeuron((Neuron)n2);
+        //        }
+        //    }
+        //}
+       
+        var firstLayer = brain1.Inners.Take(engine.numberOfInnerNeurons).ToHashSet();
+        var offset = engine.numberOfInnerNeurons;
+
+        foreach (var d in firstLayer)
         {
-            //try mutation
             var mutate = UnityEngine.Random.Range(0f, 100f);
             if (mutate <= mutationPercentage)
             {
-                var newWeight = UnityEngine.Random.Range(-4f, 4f);
-                var bias = UnityEngine.Random.Range(-1f, 1f);
-                try
-                {
-                    if (Actors.Contains(n))
-                    {
-                        var index = brain1.Inners[UnityEngine.Random.Range(0, Inners.Length - 1)];
-                        AddToMerge(index, n, newWeight, brain1);
-                    }
-                    else if (Inners.Contains(n))
-                    {
-                        var index = Sensors[UnityEngine.Random.Range(0, Inners.Length - 1)];
-                        AddToMerge(index, n, newWeight, brain1);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.Log(e.Message);
-                    Application.Quit();
-                }
-
-                this.mutated = true;
-                continue;
-            }
-            Destination n1 = null;
-            Destination n2 = null;
-            if (brain1.Neurons.ContainsKey(n))
+                AddMutatedNeuron(d, brain1, brain2);
+            }else
             {
-                Neuron t;
-                brain1.Neurons.TryGetValue(n, out t);
-                n1 = (Destination)t;
+                AddMeanedNeuron(d, brain1, brain2);
             }
-            if (brain2.Neurons.ContainsKey(n))
+            
+        }
+        //TODO double first layer maybe change idnex
+        for (int i = 1; i < engine.numberOfInnerLayers; i++)
+        {
+            var layer = brain1.Inners.Skip(offset).Take(engine.numberOfInnerNeurons).ToHashSet();
+            foreach (var d in layer)
             {
-                Neuron t;
-                brain2.Neurons.TryGetValue(n, out t);
-                n2 = (Destination)t;
-
-            }
-            if (n1 == null && n2 == null)
-            {
-                continue;
-            }
-            //TODO mutate
-            if (n1 != null && n2 != null)
-            {
-                //swap biases
-                if (rand.Next(2) == 0)
+                var mutate = UnityEngine.Random.Range(0f, 100f);
+                if (mutate <= mutationPercentage)
                 {
-                    var b2 = n2.GetBias();
-                    n1.SetBias((n1.GetBias() + b2) / 2f);
-                }
-
-                var kv1 = n1.GetWeights();
-                var kv2 = n2.GetWeights();
-
-                var keys1 = kv1.Select(x => x.Item1).ToList();
-                var keys2 = kv2.Select(x => x.Item1).ToList();
-
-                //in 2 not in 1
-                var dif2from1 = keys1.Except(keys2).ToList();
-                //in 1 not in 2
-                var dif1from2 = keys2.Except(keys1).ToList();
-                //in both
-                var inBoth = keys1.Intersect(keys2).ToList();
-
-                var destAsNeuron = (Neuron)n1;
-
-                foreach (var key in dif2from1)
+                    AddMutatedNeuron(d, brain1, brain2);
+                }else
                 {
-                    if (rand.Next(2) == 0)
-                    {
-                        var newWeight = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-
-                        AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
-
-                    }
-                }
-                foreach (var key in dif1from2)
-                {
-                    if (rand.Next(2) == 0)
-                    {
-                        var newWeight = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                        AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
-                    }
-                }
-                foreach (var key in inBoth)
-                {
-                    if (rand.Next(2) == 0)
-                    {
-                        var w1 = kv1.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                        var w2 = kv2.Where(x => x.Item1 == key).Select(x => x.Item2).First();
-                        var newWeight = (w1 + w2) / 2f;
-                        AddToMerge(key, destAsNeuron.GetId(), newWeight, brain1);
-                    }
+                    AddMeanedNeuron(d, brain1, brain2);
                 }
             }
-            else if (n1 != null && n2 == null)
+            offset += engine.numberOfInnerNeurons;
+        }
+        foreach(var d in brain1.Actors)
+        {
+            var mutate = UnityEngine.Random.Range(0f, 100f);
+            if (mutate <= mutationPercentage)
             {
-                //maybe take other brain's neuron
-                if (rand.Next(2) == 0)
-                {
-                    this.AddNeuron((Neuron)n1);
-                }
-            }
-            else
+                AddMutatedNeuron(d, brain1, brain2);
+            }else
             {
-                if (rand.Next(2) == 0)
-                {
-                    this.AddNeuron((Neuron)n2);
-                }
+                AddMeanedNeuron(d, brain1, brain2);
             }
         }
+
+
+    }
+    private void AddMutatedNeuron(int d, Brain brain1, Brain brain2)
+    {
         
+        Destination n1 = null;
+        Neuron t;
+        brain1.Neurons.TryGetValue(d, out t);
+        n1 = (Destination)t;
+        var w1 = n1.GetWeights();
+        var bias = UnityEngine.Random.Range(-1f, 1f);
+
+        foreach (var k in w1)
+        {
+            //TODO rn always meaning
+            var newWeight = UnityEngine.Random.Range(-engine.weightLimit, engine.weightLimit);
+            
+            AddToMerge(k.Item1, d, newWeight, brain1);
+        }
+
+        n1.SetBias(bias);
+        this.AddNeuron((Neuron)n1);
+        this.mutated = true;
+    }
+    
+    private void AddMeanedNeuron(int d, Brain brain1, Brain brain2)
+    {
+        Destination n1 = null;
+        Destination n2 = null;
+        Neuron t;
+        brain1.Neurons.TryGetValue(d, out t);
+        n1 = (Destination)t;
+        Neuron t2;
+        brain2.Neurons.TryGetValue(d, out t2);
+        n2 = (Destination)t2;
+
+        var w1 = n1.GetWeights();
+        var w2 = n2.GetWeights();
+        var b1 = n1.GetBias();
+        var b2 = n2.GetBias();
+
+        //var newBias = (b1 + b2) / 2f;
+        var fb = Math.Min(b1, b2);
+        var sb = Math.Max(b1, b2);
+        var newBias = UnityEngine.Random.Range(fb, sb);
+        foreach (var k in w1)
+        {
+            //TODO rn always meaning
+            var w = w2.Where(x => x.Item1 == k.Item1).Select(x => x.Item2).First();
+            var f = Math.Min(w, k.Item2);
+            var s = Math.Max(w, k.Item2);
+            var newWeight = UnityEngine.Random.Range(f,s);
+            AddToMerge(k.Item1, d, newWeight, brain1);
+        }
+        this.AddNeuron((Neuron)n1);
+        Neuron newNeuron = null;
+        AllNeurons.TryGetValue(d, out newNeuron);
+        ((Destination)newNeuron).SetBias(newBias);
+
     }
     private void AddToMerge(int s,int d, float w, Brain sourceBrain)
     {
@@ -420,7 +543,7 @@ public class Brain
             Actors.Append(n.GetId());
         }
         Neurons.Add(n.GetId(), n);
-        
+
         return true;
         //TODO change all proper string connections
 

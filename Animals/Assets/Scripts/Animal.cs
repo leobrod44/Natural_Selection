@@ -315,7 +315,7 @@ public class Animal: MonoBehaviour
         {
             return false;
         }   
-        if (engine.sections[x, z].Type == AreaType.Food && engine.sections[x,z].Element.activeInHierarchy)
+        if (engine.sections[x, z].Type == AreaType.Food && engine.sections[x,z].Element.activeInHierarchy && brain.lastFood.x!=x &&brain.lastFood.z!=z)
         {
             engine.targeted[(int)brain.nearestFood.x, (int)brain.nearestFood.z] = 0;
             brain.nearestFood = new Vector3(x, 0, z);

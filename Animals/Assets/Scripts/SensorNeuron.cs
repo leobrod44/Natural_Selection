@@ -166,6 +166,32 @@ public class FoodDistanceZ : SensorNeuron
         }
     }
 }
+public class WaterDistance: SensorNeuron
+{
+    const int WATERLAYER = 4;
+    public WaterDistance(GameObject parent) : base(parent)
+    {
+        
+    }
+    public override void SetSensorValue()
+    {
+        var distanceVector = GetDistance(brain.nearestWater);
+        SetOriginValue(distanceVector.magnitude / (Engine.MAPSIZE/4));
+    }
+}
+public class FoodDistance : SensorNeuron
+{
+    const int WATERLAYER = 4;
+    public FoodDistance(GameObject parent) : base(parent)
+    {
+
+    }
+    public override void SetSensorValue()
+    {
+        var distanceVector = GetDistance(brain.nearestFood);
+        SetOriginValue(distanceVector.magnitude / (Engine.MAPSIZE / 4));
+    }
+}
 //}
 //public class WaterDistanceSensor : SensorNeuron
 //{
