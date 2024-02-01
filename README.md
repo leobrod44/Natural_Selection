@@ -3,9 +3,6 @@
 ## Summary
 Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms, an alternative to backpropagation in reinforcement learning to have creatures adapt to their environment through selective reproduction.
 
-This simulation uses the Unity game engine but bypasses all physics engines for movement and collision detections to instead rely solely on local CPU processing power and RAM to maximize training throughput. 
-
-
 ## Example
 
 Parameters: 
@@ -20,10 +17,15 @@ Output neurons: 3
 https://github.com/leobrod44/ML_Natural_Selection_Simulator/assets/65002959/dee09375-f070-44a6-9079-c4529e565988
 
 
-
-
 <img src="https://github.com/leobrod44/ML_Natural_Selection_Simulator/assets/65002959/89dfbbd7-f4be-4105-9c2d-34464eb6d785" width="2800"> 
 
+## Performance
+
+This simulation uses the Unity game engine but bypasses all physics engines for movement and collision detections and instead uses matrices storing locations of important objects to determine where to move or where each object is stored. Movement is then simulated by performing small teleportations to the nearest desired tile.
+
+This allows maximized training speed since each input value is fed to each NN and their outcome relies solely on local CPU processing power and RAM, maximizing training throughput. 
+
+The example's 1x speed demonstrates this speed.
 
 ## Biome generation
 
