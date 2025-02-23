@@ -1,7 +1,7 @@
-# ML Natural Selection Simulator with Genetic Algorithms
+# Natural Selection Simulator with Genetic Algorithms and MLPs
 
 ## Summary
-Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms, an alternative to backpropagation in reinforcement learning to have creatures adapt to their environment through selective reproduction.
+Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms and Neural Networks to evolve behavior and by gaging environment adaptation through selective reproduction.
 
 ## Example
 
