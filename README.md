@@ -1,4 +1,4 @@
-# Natural Selection Simulator with Genetic Algorithms and MLPs
+# Natural Selection Simulator with Genetic Algorithms and Neural Networks
 
 ## Summary
 Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms and Neural Networks to evolve behavior and by gaging environment adaptation through selective reproduction.
