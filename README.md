@@ -1,7 +1,7 @@
 # Natural Selection Simulator with Genetic Algorithms and Neural Networks
 
 ## Summary
-Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Use of genetic algorithms and Neural Networks to evolve behavior and by gaging environment adaptation through selective reproduction.
+Procedurally generated biomes, creatures, and neural networks for real-time decision-making. Genetic algorithms and neural networks are used to evolve behavior and gauge environment adaptation through selective reproduction.
 
 ## Example
 
@@ -48,7 +48,7 @@ The example's 1x speed demonstrates this speed.
 
 # Neural Network
 
-This approach to reinforcement learning borrows common NN characteristics such as the input, inner (black box) layers and output neurons, each interconnected through weights and having their value tweaked by a bis. However, instead of employing traditional backpropagation for optimization, genetic algorithms are used. Across generations, this algorithm selects top performers of each batch to gradually narrow down weights and biases to their optimal value,  aiming to discover an optimal solution to surviving the longest.
+This approach to reinforcement learning borrows common NN characteristics such as the input, inner layers and output neurons, each interconnected through weights and having their value tweaked by a bias. However, instead of employing traditional backpropagation for optimization, genetic algorithms are used. Across generations, this algorithm selects top performers of each batch to gradually narrow down weights and biases to their optimal value,  aiming to discover an optimal solution to surviving the longest.
 
 Each individual in a population has a unique neural network generated. Either completely random on the initial population or based on a combination from a previous population
 
